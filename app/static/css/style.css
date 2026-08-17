@@ -1,0 +1,67 @@
+/* Общие стили */
+body { background: #f8f9fa; }
+
+/* Drag-and-drop зона */
+.drop-zone {
+  border: 2px dashed #adb5bd;
+  border-radius: .5rem;
+  padding: 1.5rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+  background: #fff;
+}
+.drop-zone:hover, .drop-zone.dragover {
+  border-color: #0d6efd;
+  background: #eef5ff;
+}
+.drop-zone-preview {
+  max-height: 120px;
+  max-width: 100%;
+  margin-top: .75rem;
+  border-radius: .375rem;
+}
+
+/* Оверлей загрузки */
+.loading-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1080;
+}
+
+/* Предпросмотр */
+.preview-wrap {
+  border: 1px solid #dee2e6;
+  border-radius: .5rem;
+  overflow: hidden;
+  background: #fff;
+}
+.preview-wrap iframe {
+  width: 100%;
+  height: 75vh;
+  border: 0;
+  display: block;
+}
+
+/* Чат */
+.chat-body {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+.chat-entry + .chat-entry {
+  border-top: 1px solid #f1f3f5;
+  padding-top: .5rem;
+}
+
+/* Чипы-примеры */
+.example-chip { text-decoration: none; }
+
+/* Мобильная адаптация */
+@media (max-width: 991.98px) {
+  .preview-wrap iframe { height: 55vh; }
+  .chat-body { max-height: 40vh; }
+}

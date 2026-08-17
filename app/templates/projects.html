@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Проекты — AI Site Construction{% endblock %}
+{% block content %}
+<div class="d-flex align-items-center mb-3">
+  <h1 class="h3 mb-0">Лента проектов</h1>
+  <a href="/" class="btn btn-primary btn-sm ms-auto">+ Новый сайт</a>
+</div>
+
+{% if projects %}
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>ID</th><th>Название / промпт</th><th>Стиль</th><th>Статус</th><th>Дата</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in projects %}
+      <tr>
+        <td class="text-muted small">{{ p.id[:8] }}</td>
+        <td>
+          <a href="/projects/{{ p.id }}">{{ p.title }}</a>
+          <div class="text-muted small text-truncate" style="max-width: 24rem;">{{ p.prompt }}</div>
+        </td>
+        <td><span class="badge text-bg-secondary">{{ p.style }}</span></td>
+        <td>
+          {% if p.status == 'done' %}<span class="badge text-bg-success">готов</span>
+          {% elif p.status == 'error' %}<span class="badge text-bg-danger" title="{{ p.error_message }}">ошибка</span>
+          {% else %}<span class="badge text-bg-warning">в работе</span>{% endif %}
+        </td>
+        <td class="small">{{ p.created_at.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td class="text-nowrap">
+          <a class="btn btn-outline-primary btn-sm" href="/projects/{{ p.id }}">Открыть</a>
+          <a class="btn btn-outline-secondary btn-sm" href="/api/projects/{{ p.id }}/download">Скачать</a>
+          <button class="btn btn-outline-danger btn-sm delete-btn" data-id="{{ p.id }}">Удалить</button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="alert alert-info">Проектов пока нет. <a href="/">Создайте первый сайт</a>.</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}
+<script>
+document.querySelectorAll('.delete-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!confirm('Удалить проект безвозвратно?')) return;
+    const resp = await fetch('/api/projects/' + btn.dataset.id, {method: 'DELETE'});
+    if (resp.ok) location.reload(); else alert('Не удалось удалить проект');
+  });
+});
+</script>
+{% endblock %}

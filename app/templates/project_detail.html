@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ project.title }} — AI Site Construction{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <h1 class="h4 mb-0 text-truncate" style="max-width: 30rem;">{{ project.title }}</h1>
+  <span id="status-badge" data-status="{{ project.status }}"
+        class="badge text-bg-{{ 'success' if project.status == 'done' else ('danger' if project.status == 'error' else 'warning') }}">
+    {% if project.status == 'done' %}готов{% elif project.status == 'error' %}ошибка{% else %}в работе{% endif %}
+  </span>
+  <div class="ms-auto d-flex gap-2">
+    <a class="btn btn-outline-secondary btn-sm" href="/api/projects/{{ project.id }}/download">Скачать .html</a>
+    <button class="btn btn-outline-warning btn-sm" id="regen-btn">Перегенерировать</button>
+    <button class="btn btn-outline-danger btn-sm" id="delete-btn">Удалить</button>
+  </div>
+</div>
+
+<div id="error-alert" class="alert alert-danger {% if project.status != 'error' %}d-none{% endif %}">
+  {{ project.error_message or '' }}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="preview-wrap">
+      <iframe id="preview" src="/projects/{{ project.id }}/preview"
+              sandbox="allow-scripts" title="Предпросмотр сайта"></iframe>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Редактирование через чат</div>
+      <div class="card-body chat-body" id="chat-body">
+        {% for h in project.history %}
+        <div class="chat-entry mb-2">
+          <span class="badge text-bg-{{ 'primary' if h.kind == 'edit' else 'secondary' }}">
+            {{ 'правка' if h.kind == 'edit' else ('перегенерация' if h.kind == 'regenerate' else 'генерация') }}
+          </span>
+          <div class="small">{{ h.instruction }}</div>
+          <div class="text-muted" style="font-size:.7rem">{{ h.created_at.strftime('%d.%m %H:%M') }}</div>
+        </div>
+        {% else %}
+        <p class="text-muted small">История пуста — сайт ещё генерируется.</p>
+        {% endfor %}
+        <div id="chat-thinking" class="text-muted small d-none">
+          <span class="spinner-border spinner-border-sm"></span> LLM обновляет сайт…
+        </div>
+      </div>
+      <div class="card-footer">
+        <form id="chat-form" class="d-flex gap-2">
+          <input type="text" class="form-control" id="chat-input" maxlength="2000"
+                 placeholder="Например: сделай шапку тёмнее" autocomplete="off">
+          <button class="btn btn-primary" id="chat-send" type="submit">→</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+  window.PROJECT_ID = "{{ project.id }}";
+  window.PROJECT_STATUS = "{{ project.status }}";
+</script>
+<script src="{{ url_for('static', path='/js/detail.js') }}"></script>
+{% endblock %}

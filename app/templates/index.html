@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Генерация сайта — AI Site Construction{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <h1 class="h3 mb-3">Генерация сайта</h1>
+
+    <div class="mb-3">
+      <span class="me-2 text-muted small">Пресеты:</span>
+      {% for key, preset in presets.items() %}
+      <button type="button" class="btn btn-outline-secondary btn-sm me-1 preset-btn"
+              data-prompt="{{ preset.prompt }}">{{ preset.label }}</button>
+      {% endfor %}
+    </div>
+
+    <form id="gen-form" novalidate>
+      <div class="mb-3">
+        <label for="prompt" class="form-label">Описание желаемого сайта</label>
+        <textarea class="form-control" id="prompt" name="prompt" rows="4" required
+                  maxlength="5000" placeholder="Например: сайт для кофейни — меню, атмосфера, бронирование столика…"></textarea>
+        <div class="invalid-feedback">Опишите сайт (до 5000 символов).</div>
+        <div class="form-text">
+          Примеры:
+          <a href="#" class="example-chip">пекарня</a>,
+          <a href="#" class="example-chip">фотограф</a>,
+          <a href="#" class="example-chip">IT-курсы</a>,
+          <a href="#" class="example-chip">стоматология</a>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-6">
+          <label for="font" class="form-label">Шрифт</label>
+          <select class="form-select" id="font" name="font">
+            {% for f in fonts %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label for="style" class="form-label">Стилевое направление</label>
+          <select class="form-select" id="style" name="style">
+            {% for key, name in styles.items() %}<option value="{{ key }}">{{ name }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-md-4">
+          <label for="color_primary" class="form-label">Основной цвет</label>
+          <input type="color" class="form-control form-control-color w-100" id="color_primary"
+                 name="color_primary" value="#1f2937">
+        </div>
+        <div class="col-md-4">
+          <label for="color_accent" class="form-label">Акцентный цвет</label>
+          <input type="color" class="form-control form-control-color w-100" id="color_accent"
+                 name="color_accent" value="#3b82f6">
+        </div>
+        <div class="col-md-4">
+          <label for="color_bg" class="form-label">Фоновый цвет</label>
+          <input type="color" class="form-control form-control-color w-100" id="color_bg"
+                 name="color_bg" value="#ffffff">
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Референсное изображение (JPG/PNG, до 5 МБ, необязательно)</label>
+        <div id="drop-zone" class="drop-zone">
+          <p class="mb-1">Перетащите изображение сюда или <u>выберите файл</u></p>
+          <p class="text-muted small mb-0" id="file-name">файл не выбран</p>
+          <img id="file-preview" class="drop-zone-preview d-none" alt="превью">
+        </div>
+        <input type="file" id="image" name="image" accept="image/jpeg,image/png" hidden>
+        <div class="invalid-feedback" id="image-error">Только JPG/PNG до 5 МБ.</div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-lg w-100" id="submit-btn">Сгенерировать сайт</button>
+    </form>
+  </div>
+</div>
+
+<div id="loading-overlay" class="loading-overlay d-none">
+  <div class="text-center text-white">
+    <div class="spinner-border mb-3" role="status"></div>
+    <div id="loading-text">Генерация сайта… это может занять несколько минут</div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/main.js') }}"></script>
+{% endblock %}
