@@ -25,6 +25,9 @@ class Settings(BaseSettings):
     session_cookie_secure: bool = False  # в production включить True + HTTPS
     session_cookie_httponly: bool = True
     cors_origins: str = "http://127.0.0.1:8000,http://localhost:8000"
+    # Railway/прокси: доверять X-Forwarded-Proto/Host (для корректных redirect и secure-cookie)
+    proxy_headers: bool = False
+    forwarded_allow_ips: str = "*"
     sites_dir: str = str(BASE_DIR / "data" / "sites")       # многофайловые сайты: data/sites/<user_id>/<project_id>/
     fonts_dir: str = str(BASE_DIR / "data" / "fonts")       # кастомные шрифты, загружаемые админом
     max_font_mb: int = 5
