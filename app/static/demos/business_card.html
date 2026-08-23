@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>СТРОЙМИР — Строительные материалы оптом и в розницу</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #14161a;
+      --surface: #1c1f26;
+      --card: #22262f;
+      --text: #eef1f6;
+      --muted: #9aa3b2;
+      --amber: #f5a623;
+      --amber-deep: #d98c0f;
+      --line: rgba(245, 166, 35, .22);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, .display { font-family: "Oswald", sans-serif; text-transform: uppercase; letter-spacing: .02em; }
+
+    /* ── Диагональная «строительная» лента сверху ── */
+    .hazard {
+      height: 8px;
+      background: repeating-linear-gradient(-45deg, var(--amber) 0 18px, #14161a 18px 36px);
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem clamp(1.25rem, 5vw, 4rem);
+      background: rgba(20, 22, 26, .88);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .logo { font-family: "Oswald", sans-serif; font-size: 1.4rem; font-weight: 700; letter-spacing: .06em; }
+    .logo em { color: var(--amber); font-style: normal; }
+    nav .links a {
+      color: var(--muted); text-decoration: none; margin-left: 2rem;
+      font-size: .85rem; letter-spacing: .1em; text-transform: uppercase;
+      transition: color .2s;
+    }
+    nav .links a:hover { color: var(--amber); }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      padding: clamp(5rem, 14vh, 8rem) clamp(1.25rem, 5vw, 4rem);
+      background:
+        linear-gradient(rgba(20,22,26,.82), rgba(20,22,26,.92)),
+        repeating-linear-gradient(90deg, transparent 0 79px, rgba(245,166,35,.05) 79px 80px),
+        repeating-linear-gradient(0deg, transparent 0 79px, rgba(245,166,35,.05) 79px 80px);
+      overflow: hidden;
+    }
+    .hero-inner { max-width: 1200px; margin: 0 auto; position: relative; z-index: 1; }
+    .tag {
+      display: inline-flex; align-items: center; gap: .5rem;
+      border: 1px solid var(--line); color: var(--amber);
+      padding: .4rem 1rem; font-size: .74rem; letter-spacing: .28em;
+      text-transform: uppercase; margin-bottom: 1.8rem;
+    }
+    .hero h1 {
+      font-size: clamp(2.6rem, 7vw, 5rem);
+      line-height: 1.04; max-width: 900px; margin-bottom: 1.4rem;
+    }
+    .hero h1 .amber {
+      color: var(--amber);
+      text-shadow: 0 0 40px rgba(245, 166, 35, .35);
+    }
+    .hero p { color: var(--muted); max-width: 560px; font-weight: 300; font-size: 1.08rem; margin-bottom: 2.6rem; }
+    .cta-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: 1rem 2.4rem; text-decoration: none;
+      font-family: "Oswald", sans-serif; font-size: .92rem; letter-spacing: .12em;
+      text-transform: uppercase; transition: all .25s;
+    }
+    .btn-amber {
+      background: var(--amber); color: #14161a; font-weight: 600;
+      box-shadow: 0 10px 30px rgba(245, 166, 35, .3);
+    }
+    .btn-amber:hover { background: var(--amber-deep); transform: translateY(-3px); box-shadow: 0 16px 40px rgba(245,166,35,.42); }
+    .btn-ghost { border: 1px solid rgba(255,255,255,.2); color: var(--text); }
+    .btn-ghost:hover { border-color: var(--amber); color: var(--amber); }
+
+    /* Бегущая строка с ценами */
+    .ticker {
+      border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      background: var(--surface); overflow: hidden; padding: .8rem 0;
+    }
+    .ticker-track {
+      display: flex; gap: 3rem; white-space: nowrap;
+      animation: ticker 28s linear infinite;
+      font-family: "Oswald", sans-serif; letter-spacing: .14em;
+      text-transform: uppercase; font-size: .85rem; color: var(--muted);
+    }
+    .ticker-track span b { color: var(--amber); font-weight: 600; }
+    @keyframes ticker { to { transform: translateX(-50%); } }
+
+    /* ── Каталог-превью ── */
+    .section { max-width: 1200px; margin: 0 auto; padding: clamp(4rem, 10vh, 6rem) clamp(1.25rem, 5vw, 4rem); }
+    .kicker { color: var(--amber); font-size: .74rem; letter-spacing: .32em; text-transform: uppercase; margin-bottom: .8rem; }
+    .section h2 { font-size: clamp(1.9rem, 4vw, 2.7rem); margin-bottom: 3rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1.4rem; }
+    .cat {
+      background: var(--card); border: 1px solid var(--line);
+      padding: 2rem 1.8rem; position: relative; overflow: hidden;
+      transition: transform .28s, border-color .28s, box-shadow .28s;
+    }
+    .cat::before {
+      content: ""; position: absolute; top: 0; left: 0; width: 3px; height: 0;
+      background: var(--amber); transition: height .3s;
+    }
+    .cat:hover { transform: translateY(-6px); border-color: rgba(245,166,35,.5); box-shadow: 0 22px 48px rgba(0,0,0,.5); }
+    .cat:hover::before { height: 100%; }
+    .cat .num { font-family: "Oswald", sans-serif; font-size: 2.6rem; color: rgba(245,166,35,.16); line-height: 1; margin-bottom: .8rem; }
+    .cat h3 { font-size: 1.25rem; margin-bottom: .5rem; }
+    .cat p { color: var(--muted); font-size: .92rem; font-weight: 300; }
+    .cat .price { display: block; margin-top: 1.1rem; color: var(--amber); font-weight: 600; font-size: .9rem; letter-spacing: .04em; }
+
+    /* ── Фото склада (placeholder) ── */
+    .warehouse {
+      display: grid; grid-template-columns: 1.1fr 1fr; gap: 0;
+      max-width: 1200px; margin: 0 auto; border: 1px solid var(--line);
+    }
+    .warehouse .photo {
+      min-height: 340px;
+      background:
+        linear-gradient(135deg, rgba(245,166,35,.12), rgba(34,211,238,.06)),
+        repeating-linear-gradient(45deg, #1c1f26 0 24px, #22262f 24px 48px);
+      display: flex; align-items: center; justify-content: center;
+      border-right: 1px solid var(--line);
+    }
+    .ph-label {
+      text-align: center; color: var(--muted); font-size: .85rem;
+      border: 2px dashed rgba(245,166,35,.4); padding: 1.6rem 2.2rem;
+      border-radius: 12px; background: rgba(20,22,26,.6);
+    }
+    .ph-label .icon { font-size: 2rem; display: block; margin-bottom: .6rem; }
+    .warehouse .info { padding: clamp(2rem, 5vw, 3.5rem); display: flex; flex-direction: column; justify-content: center; }
+    .warehouse .info h2 { font-size: clamp(1.7rem, 3.5vw, 2.3rem); margin-bottom: 1rem; }
+    .warehouse .info p { color: var(--muted); font-weight: 300; margin-bottom: 2rem; }
+    .facts { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 2.2rem; }
+    .fact { border-left: 3px solid var(--amber); padding-left: 1rem; }
+    .fact strong { display: block; font-family: "Oswald", sans-serif; font-size: 1.7rem; }
+    .fact span { color: var(--muted); font-size: .8rem; letter-spacing: .1em; text-transform: uppercase; }
+
+    /* ── Contacts ── */
+    .contacts { text-align: center; padding-bottom: clamp(4rem, 10vh, 6rem); }
+    .contact-row { display: flex; justify-content: center; flex-wrap: wrap; gap: 2.2rem; margin-top: 2.2rem; }
+    .contact-row a {
+      color: var(--text); text-decoration: none; font-size: .95rem;
+      border-bottom: 1px solid var(--amber); padding-bottom: 3px; transition: color .2s;
+    }
+    .contact-row a:hover { color: var(--amber); }
+
+    footer {
+      text-align: center; padding: 2rem; color: var(--muted);
+      font-size: .8rem; border-top: 1px solid var(--line);
+    }
+
+    /* Появление при скролле */
+    .reveal { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    @media (max-width: 860px) {
+      nav .links { display: none; }
+      .warehouse { grid-template-columns: 1fr; }
+      .warehouse .photo { border-right: 0; border-bottom: 1px solid var(--line); }
+    }
+  </style>
+</head>
+<body>
+  <div class="hazard"></div>
+  <nav>
+    <div class="logo">СТРОЙ<em>МИР</em></div>
+    <div class="links">
+      <a href="#catalog">Каталог</a>
+      <a href="#warehouse">Склад</a>
+      <a href="#contacts">Контакты</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="hero-inner">
+      <div class="tag">◆ Строительные материалы · с 2009 года</div>
+      <h1>Материалы, на которых<br><span class="amber">держатся дома</span></h1>
+      <p>Бетон, арматура, кирпич, утеплители и сухие смеси — оптом и в розницу.
+         Доставка на объект в день заказа, паспорт качества на каждую партию.</p>
+      <div class="cta-row">
+        <a class="btn btn-amber" href="#catalog">Смотреть каталог</a>
+        <a class="btn btn-ghost" href="#contacts">Рассчитать доставку</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="ticker">
+    <div class="ticker-track">
+      <span>◆ Бетон <b>от 4 900 ₽/м³</b></span>
+      <span>◆ Арматура А500С <b>от 52 ₽/кг</b></span>
+      <span>◆ Кирпич керамический <b>от 18 ₽/шт</b></span>
+      <span>◆ Доставка <b>в день заказа</b></span>
+      <span>◆ Бетон <b>от 4 900 ₽/м³</b></span>
+      <span>◆ Арматура А500С <b>от 52 ₽/кг</b></span>
+      <span>◆ Кирпич керамический <b>от 18 ₽/шт</b></span>
+      <span>◆ Доставка <b>в день заказа</b></span>
+    </div>
+  </div>
+
+  <section class="section" id="catalog">
+    <div class="kicker reveal">Каталог</div>
+    <h2 class="reveal">Популярные категории</h2>
+    <div class="grid">
+      <div class="cat reveal">
+        <div class="num">01</div>
+        <h3>Бетон и растворы</h3>
+        <p>М100–М450 с доставкой миксером. Прочность по ГОСТ, паспорт на каждую партию.</p>
+        <span class="price">от 4 900 ₽/м³</span>
+      </div>
+      <div class="cat reveal">
+        <div class="num">02</div>
+        <h3>Арматура и металлопрокат</h3>
+        <p>А500С, А240, уголок, швеллер, труба. Резка в размер, доставка манипулятором.</p>
+        <span class="price">от 52 ₽/кг</span>
+      </div>
+      <div class="cat reveal">
+        <div class="num">03</div>
+        <h3>Кирпич и блоки</h3>
+        <p>Керамический, силикатный, газобетон. Поддонами с завода, бой менее 1%.</p>
+        <span class="price">от 18 ₽/шт</span>
+      </div>
+      <div class="cat reveal">
+        <div class="num">04</div>
+        <h3>Сухие смеси и утеплители</h3>
+        <p>Штукатурки, шпаклёвки, клей, минвата и ППС. Всё для отделки и утепления.</p>
+        <span class="price">от 290 ₽/мешок</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="warehouse" style="padding-top:0;">
+    <div class="warehouse reveal">
+      <div class="photo">
+        <div class="ph-label">
+          <span class="icon">📷</span>
+          Здесь фото вашего склада или продукции<br>
+          <small>(загружается в режиме «Полноценный сайт»)</small>
+        </div>
+      </div>
+      <div class="info">
+        <div class="kicker">Собственный склад</div>
+        <h2>12 000 м² запасов<br>на складе</h2>
+        <p>Не ждём поставок — основные позиции всегда в наличии.
+         Отгрузка со склада в день оплаты, работаем с юрлицами и физлицами.</p>
+        <div class="facts">
+          <div class="fact"><strong>12 000 м²</strong><span>склад</span></div>
+          <div class="fact"><strong>15 лет</strong><span>на рынке</span></div>
+          <div class="fact"><strong>4 800+</strong><span>клиентов</span></div>
+          <div class="fact"><strong>24 ч</strong><span>доставка</span></div>
+        </div>
+        <a class="btn btn-amber" href="#contacts">Получить прайс</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section contacts" id="contacts">
+    <div class="kicker reveal">Контакты</div>
+    <h2 class="reveal">Считаем ваш объект за 15 минут</h2>
+    <p class="reveal" style="color:var(--muted);max-width:520px;margin:0 auto;font-weight:300;">
+      Пришлите смету или объёмы — вернёмся с ценой и графиком поставок.
+    </p>
+    <a class="btn btn-amber reveal" href="tel:+74950001122">+7 (495) 000-11-22</a>
+    <div class="contact-row reveal">
+      <a href="mailto:zakaz@stroymir.ru">zakaz@stroymir.ru</a>
+      <a href="#">МКАД 41-й км, склад №7</a>
+      <a href="#">Пн–Сб 8:00–20:00</a>
+    </div>
+  </section>
+
+  <footer>© 2026 СТРОЙМИР · Строительные материалы оптом и в розницу</footer>
+
+  <script>
+    // Scroll-reveal
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+      });
+    }, { threshold: .12 });
+    document.querySelectorAll('.reveal').forEach(function (el) { observer.observe(el); });
+  </script>
+</body>
+</html>

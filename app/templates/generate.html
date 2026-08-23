@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Генерация сайта | AI Site Construction{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="row mb-4 align-items-center">
+    <div class="col-md-8">
+      <h1 class="h3">🤖 Генератор сайтов с ИИ</h1>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <a href="/projects" class="btn btn-outline-secondary">← К проектам</a>
+    </div>
+  </div>
+
+  <!-- User Info Banner -->
+  {% if user %}
+  <div class="alert alert-info border-0 shadow-sm mb-4">
+    <div class="d-flex align-items-center flex-wrap gap-2">
+      <span>👤 <strong>{{ user.username }}</strong></span>
+      <span class="badge {{ 'bg-danger' if user.is_admin else ('bg-success' if plan.key == 'premium' else ('bg-primary' if plan.key == 'standard' else 'bg-secondary')) }}">
+        💳 Тариф: {{ plan.title }}
+      </span>
+      <span class="text-muted small ms-auto">{{ plan.description }}</span>
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-warning border-0 shadow-sm mb-4">
+    ⚠️ Вы не авторизованы. Пожалуйста, войдите в систему для использования генератора.
+    <a href="/login" class="alert-link">Войти сейчас</a>
+  </div>
+  {% endif %}
+
+  <!-- Generation Form -->
+  <div class="row g-4">
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">📝 Параметры генерации</h5>
+        </div>
+        <div class="card-body p-4">
+          <form id="gen-form" novalidate>
+            <!-- Prompt -->
+            <div class="mb-4">
+              <label for="prompt" class="form-label fw-bold">Описание желаемого сайта</label>
+              <textarea class="form-control" 
+                        id="prompt" 
+                        name="prompt" 
+                        rows="4" 
+                        required
+                        maxlength="5000"
+                        placeholder="Например: сайт для кофейни — меню, атмосфера, бронирование столика…"></textarea>
+              <div class="invalid-feedback">Опишите сайт (до 5000 символов).</div>
+              <div class="form-text">
+                Примеры:
+                <a href="#" class="example-chip">пекарня</a>,
+                <a href="#" class="example-chip">фотограф</a>,
+                <a href="#" class="example-chip">IT-курсы</a>,
+                <a href="#" class="example-chip">стоматология</a>
+              </div>
+            </div>
+
+            <!-- Style -->
+            <div class="mb-3">
+              <label for="style" class="form-label fw-bold">Стилевое направление</label>
+              <select class="form-select" id="style" name="style">
+                {% for key, name in styles.items() %}
+                  <option value="{{ key }}">{{ name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Font -->
+            <div class="mb-3">
+              <label for="font" class="form-label fw-bold">Шрифт</label>
+              <select class="form-select" id="font" name="font">
+                {% for f in fonts %}
+                  <option value="{{ f }}">{{ f }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Colors -->
+            <div class="row g-3 mb-4">
+              <div class="col-md-4">
+                <label for="color_primary" class="form-label fw-bold">Основной цвет</label>
+                <input type="color" 
+                       class="form-control form-control-color w-100" 
+                       id="color_primary"
+                       name="color_primary" 
+                       value="#1f2937">
+              </div>
+              <div class="col-md-4">
+                <label for="color_accent" class="form-label fw-bold">Акцентный цвет</label>
+                <input type="color" 
+                       class="form-control form-control-color w-100" 
+                       id="color_accent"
+                       name="color_accent" 
+                       value="#3b82f6">
+              </div>
+              <div class="col-md-4">
+                <label for="color_bg" class="form-label fw-bold">Фоновый цвет</label>
+                <input type="color" 
+                       class="form-control form-control-color w-100" 
+                       id="color_bg"
+                       name="color_bg" 
+                       value="#ffffff">
+              </div>
+            </div>
+
+            <!-- Image Upload (standard+) -->
+            <div class="mb-4">
+              {% if plan.reference_image %}
+              <label class="form-label fw-bold">Референсное изображение (JPG/PNG, до 5 МБ)</label>
+              <div id="drop-zone" class="drop-zone border rounded p-3 text-center bg-light">
+                <p class="mb-1">Перетащите изображение сюда или <u>выберите файл</u></p>
+                <p class="text-muted small mb-0" id="file-name">файл не выбран</p>
+                <img id="file-preview" class="drop-zone-preview d-none rounded" alt="превью">
+              </div>
+              <input type="file"
+                     id="image"
+                     name="image"
+                     accept="image/jpeg,image/png"
+                     hidden>
+              <div class="invalid-feedback" id="image-error">Только JPG/PNG до 5 МБ.</div>
+              {% else %}
+              <label class="form-label fw-bold">Референсное изображение</label>
+              <div class="border rounded p-3 text-center bg-light text-muted small">
+                🔒 Доступно со <strong>Стандартного</strong> тарифа
+              </div>
+              {% endif %}
+            </div>
+
+            <!-- Asset images (standard+, multifile) -->
+            {% if plan.asset_images %}
+            <div class="mb-4">
+              <label class="form-label fw-bold">Изображения для сайта (ИИ разместит сам)</label>
+              <input type="file" class="form-control" id="site-files" name="files"
+                     multiple
+                     accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.ico">
+              <div class="text-muted small mt-1" id="files-count">изображения не выбраны</div>
+              <div class="form-text">
+                ИИ посмотрит содержимое картинок и поставит их в подходящие места
+                (галерея, hero, меню). 🔤 Кастомные шрифты подключает администратор —
+                они доступны автоматически.
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Multipage (premium beta) -->
+            {% if plan.multipage %}
+            <div class="mb-4">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" role="switch" id="multipage" name="multipage" value="true">
+                <label class="form-check-label fw-bold" for="multipage">
+                  📚 Многостраничный сайт <span class="badge bg-warning text-dark">Бета</span>
+                </label>
+              </div>
+              <div class="form-text">
+                Несколько HTML-страниц с общей навигацией (index, about, contacts...).
+              </div>
+            </div>
+            {% endif %}
+
+            <!-- Submit -->
+            <button type="submit" class="btn btn-primary btn-lg w-100" id="submit-btn">
+              🚀 Сгенерировать сайт
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips Panel -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">💡 Советы</h5>
+        </div>
+        <div class="card-body p-3">
+          <ul class="small mb-0 ps-3">
+            <li>• Опишите цель сайта подробно</li>
+            <li>• Укажите целевую аудиторию</li>
+            <li>• Назовите разделы и их содержание</li>
+            <li>• Выберите подходящий стиль</li>
+            <li>• Можно использовать референсное изображение</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay d-none">
+    <div class="ai-progress text-center text-white">
+      <div class="ai-orbit"></div>
+      <h5 class="mb-1">🤖 ИИ создаёт ваш сайт</h5>
+      <div class="text-muted small" id="loading-text">Обработка запроса…</div>
+      <ul class="ai-steps" id="ai-steps">
+        <li data-step="0"><span class="dot"></span> Анализ описания</li>
+        <li data-step="1"><span class="dot"></span> Проектирование структуры и стиля</li>
+        <li data-step="2"><span class="dot"></span> Генерация HTML/CSS/JS</li>
+        <li data-step="3"><span class="dot"></span> Проверка безопасности и качества</li>
+        <li data-step="4"><span class="dot"></span> Финальная сборка</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% block scripts %}
+<script src="{{ url_for('static', path='/js/main.js') }}"></script>
+{% endblock %}
+{% endblock %}

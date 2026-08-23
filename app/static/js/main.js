@@ -99,14 +99,50 @@
     }
   });
 
+  // --- AI-прогресс: анимация этапов генерации ---
+  var stepEls = document.querySelectorAll('#ai-steps li');
+  var stepTimer = null;
+  var currentStep = 0;
+
+  function markStep(idx, cls) {
+    if (!stepEls[idx]) return;
+    stepEls[idx].classList.remove('active', 'done');
+    if (cls) stepEls[idx].classList.add(cls);
+  }
+
+  function startAiSteps() {
+    currentStep = 0;
+    markStep(0, 'active');
+    // Этапы 0–3 идут по времени (генерация занимает минуты), финал — по статусу
+    var delays = [0, 12000, 30000, 70000];
+    stepTimer = setTimeout(function advance() {
+      markStep(currentStep, 'done');
+      currentStep += 1;
+      if (currentStep < stepEls.length - 1) {
+        markStep(currentStep, 'active');
+        stepTimer = setTimeout(advance, delays[currentStep] - delays[currentStep - 1] || 15000);
+      }
+    }, 100);
+  }
+
+  function finishAiSteps() {
+    clearTimeout(stepTimer);
+    for (var i = 0; i < stepEls.length; i++) {
+      markStep(i, i < stepEls.length - 1 ? 'done' : 'done');
+    }
+  }
+
   function pollStatus(id) {
+    startAiSteps();
     var timer = setInterval(async function () {
       try {
         var resp = await fetch('/api/projects/' + id + '/status');
         var data = await resp.json();
         if (data.status === 'done') {
           clearInterval(timer);
-          window.location.href = '/projects/' + id;
+          loadingText.textContent = 'Готово! Открываем ваш сайт…';
+          finishAiSteps();
+          setTimeout(function () { window.location.href = '/projects/' + id; }, 900);
         } else if (data.status === 'error') {
           clearInterval(timer);
           overlay.classList.add('d-none');
@@ -114,5 +150,16 @@
         }
       } catch (e) { /* сеть моргнула — пробуем дальше */ }
     }, 3000);
+  }
+
+  // --- Многофайловый режим ---
+  var siteFiles = document.getElementById('site-files');
+  if (siteFiles) {
+    var filesCount = document.getElementById('files-count');
+    siteFiles.addEventListener('change', function () {
+      filesCount.textContent = siteFiles.files.length
+        ? 'выбрано изображений: ' + siteFiles.files.length
+        : 'изображения не выбраны';
+    });
   }
 })();

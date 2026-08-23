@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Управление шрифтами | AI Site Construction{% endblock %}
+{% block content %}
+<div class="container">
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+    <h1 class="h3 mb-0">🔤 Кастомные шрифты</h1>
+    {% if user.is_admin %}
+      <span class="badge bg-danger">Администратор</span>
+    {% endif %}
+  </div>
+
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <p class="text-muted mb-0">
+        Шрифты из этой библиотеки доступны всем пользователям при генерации сайтов.
+        Загружать и удалять шрифты могут только администраторы.
+        Поддерживаются форматы: WOFF2, WOFF, TTF, OTF (до 5 МБ).
+      </p>
+    </div>
+  </div>
+
+  {% if user.is_admin %}
+  <!-- Upload Form -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-light fw-bold">⬆️ Загрузить шрифт</div>
+    <div class="card-body">
+      <form id="font-upload-form">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-8">
+            <input type="file" class="form-control" id="font-file"
+                   accept=".woff2,.woff,.ttf,.otf" required>
+            <div class="invalid-feedback" id="font-error"></div>
+          </div>
+          <div class="col-md-4">
+            <button type="submit" class="btn btn-primary w-100" id="font-upload-btn">
+              Загрузить
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Fonts List -->
+  <h3 class="mb-3">📚 Библиотека шрифтов</h3>
+  {% if fonts %}
+  <div class="table-responsive shadow-sm">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Название файла</th>
+          <th>Семейство (для CSS)</th>
+          <th>Размер</th>
+          {% if user.is_admin %}<th>Действия</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in fonts %}
+        <tr>
+          <td class="fw-bold">{{ f.name }}</td>
+          <td><code>{{ f.name.split('.')[0] }}</code></td>
+          <td class="small text-muted">{{ '%.1f'|format(f.size / 1024) }} КБ</td>
+          {% if user.is_admin %}
+          <td>
+            <button class="btn btn-outline-danger btn-sm font-delete-btn" data-name="{{ f.name }}">🗑️ Удалить</button>
+          </td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="card shadow-sm border-0">
+    <div class="card-body text-center py-5">
+      <div class="display-1 mb-3">🔤</div>
+      <h4>Библиотека пуста</h4>
+      <p class="text-muted mb-0">
+        {% if user.is_admin %}
+          Загрузите первый шрифт, чтобы он стал доступен пользователям.
+        {% else %}
+          Администратор ещё не загрузил кастомные шрифты.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const isAdmin = {{ 'true' if user.is_admin else 'false' }};
+
+async function loadFonts() {
+  const resp = await fetch('/api/fonts');
+  if (!resp.ok) return;
+  location.reload();
+}
+
+if (isAdmin) {
+  document.getElementById('font-upload-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('font-file');
+    const errEl = document.getElementById('font-error');
+    errEl.textContent = '';
+    if (!input.files.length) return;
+    const fd = new FormData();
+    fd.append('file', input.files[0]);
+    const resp = await fetch('/api/fonts', { method: 'POST', body: fd });
+    if (resp.ok) {
+      location.reload();
+    } else {
+      const data = await resp.json().catch(() => ({}));
+      errEl.textContent = data.detail || 'Ошибка загрузки';
+      input.classList.add('is-invalid');
+    }
+  });
+
+  document.querySelectorAll('.font-delete-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm(`Удалить шрифт «${btn.dataset.name}»?`)) return;
+      const resp = await fetch(`/api/fonts/${encodeURIComponent(btn.dataset.name)}`, { method: 'DELETE' });
+      if (resp.ok) location.reload();
+      else alert('Не удалось удалить шрифт');
+    });
+  });
+}
+</script>
+{% endblock %}

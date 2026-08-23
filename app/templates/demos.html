@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Демонстрации | AI Site Construction{% endblock %}
+{% block content %}
+<div class="container">
+  <!-- Header -->
+  <div class="hero-section text-center py-5 px-4 mb-5 fade-up">
+    <h1 class="display-4 fw-bold mb-3">🎨 Демонстрации</h1>
+    <p class="lead mb-4 opacity-75">Посмотрите примеры сайтов, созданных с помощью нашего ИИ</p>
+    <a href="/" class="btn btn-outline-light">← Вернуться на главную</a>
+  </div>
+
+  <!-- Demos Grid -->
+  <div class="row g-4 fade-up">
+    <!-- Demo 1: Business Card -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm border-0 demo-card">
+        <div class="demo-thumb demo-thumb-business">
+          <img src="{{ url_for('static', path='/img/demo-business.jpg') }}" alt="Демо визитки"
+               style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
+               onerror="this.remove()">💼
+        </div>
+        <div class="card-body">
+          <h5 class="card-title fw-bold mb-2">Бизнес-карта</h5>
+          <p class="card-text text-muted small mb-3">
+            Профессиональная визитка для предпринимателя: контакты, услуги, призыв к действию
+          </p>
+          <a href="{{ url_for('static', path='/demos/business_card.html') }}"
+             target="_blank"
+             class="btn btn-primary btn-sm w-100">
+            Открыть демо →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo 2: Landing Page -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm border-0 demo-card">
+        <div class="demo-thumb demo-thumb-landing">
+          <img src="{{ url_for('static', path='/img/demo-landing.jpg') }}" alt="Демо лендинга"
+               style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
+               onerror="this.remove()">🚀
+        </div>
+        <div class="card-body">
+          <h5 class="card-title fw-bold mb-2">Лендинг</h5>
+          <p class="card-text text-muted small mb-3">
+            Современный лендинг для стартапа: hero-блок, преимущества, форма заявки
+          </p>
+          <a href="{{ url_for('static', path='/demos/landing.html') }}"
+             target="_blank"
+             class="btn btn-primary btn-sm w-100">
+            Открыть демо →
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Demo 3: Portfolio -->
+    <div class="col-md-6 col-lg-4">
+      <div class="card h-100 shadow-sm border-0 demo-card">
+        <div class="demo-thumb demo-thumb-portfolio">
+          <img src="{{ url_for('static', path='/img/demo-portfolio.jpg') }}" alt="Демо портфолио"
+               style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;"
+               onerror="this.remove()">🖼️
+        </div>
+        <div class="card-body">
+          <h5 class="card-title fw-bold mb-2">Портфолио</h5>
+          <p class="card-text text-muted small mb-3">
+            Портфолио фотографа: галерея работ, обо мне, контакты и соцсети
+          </p>
+          <a href="{{ url_for('static', path='/demos/portfolio.html') }}"
+             target="_blank"
+             class="btn btn-primary btn-sm w-100">
+            Открыть демо →
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features Section -->
+  <section class="mt-5">
+    <h2 class="h3 fw-bold mb-4">✨ Почему наши демо?</h2>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center py-4">
+            <div class="feature-icon mb-3">⚡</div>
+            <h5 class="card-title fw-bold mb-2">Быстрая генерация</h5>
+            <p class="card-text text-muted small mb-0">
+              Создавайте полноценные сайты за несколько минут с помощью ИИ
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center py-4">
+            <div class="feature-icon mb-3">🎨</div>
+            <h5 class="card-title fw-bold mb-2">Уникальный дизайн</h5>
+            <p class="card-text text-muted small mb-0">
+              Каждый сайт уникален благодаря гибким настройкам стиля
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center py-4">
+            <div class="feature-icon mb-3">📱</div>
+            <h5 class="card-title fw-bold mb-2">Адаптивный дизайн</h5>
+            <p class="card-text text-muted small mb-0">
+              Сайты отлично выглядят на любых устройствах
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="text-center py-5 mt-4 mb-2">
+    <p class="text-muted mb-3">Понравились примеры? Создайте свой сайт прямо сейчас!</p>
+    {% if user %}
+      <a href="/generate" class="btn btn-primary btn-lg px-5">🚀 Начать генерацию</a>
+    {% else %}
+      <a href="/login" class="btn btn-primary btn-lg px-5">🚀 Войти и начать</a>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

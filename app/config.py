@@ -21,9 +21,29 @@ class Settings(BaseSettings):
     # Приложение
     database_url: str = f"sqlite:///{BASE_DIR / 'data' / 'app.db'}"
     upload_dir: str = str(BASE_DIR / "uploads")
-    max_upload_mb: int = 5
     secret_key: str = "change-me-in-production"
+    session_cookie_secure: bool = False  # в production включить True + HTTPS
+    session_cookie_httponly: bool = True
     cors_origins: str = "http://127.0.0.1:8000,http://localhost:8000"
+    sites_dir: str = str(BASE_DIR / "data" / "sites")       # многофайловые сайты: data/sites/<user_id>/<project_id>/
+    fonts_dir: str = str(BASE_DIR / "data" / "fonts")       # кастомные шрифты, загружаемые админом
+    max_font_mb: int = 5
+    max_upload_mb: int = 5
+    max_site_files: int = 50          # максимум файлов в одном проекте
+    max_project_size_mb: int = 50     # суммарный размер файлов проекта
+    vision_assets: bool = True        # отправлять загруженные изображения модели как vision-контент
+    vision_assets_limit: int = 6      # максимум изображений в vision-контенте за один запрос
+
+    @model_validator(mode="after")
+    def _warn_on_default_secret(self):
+        """Небезопасный дефолтный secret_key: предупреждение при старте (не падаем, чтобы не ломать dev)."""
+        if self.secret_key == "change-me-in-production":
+            import logging
+
+            logging.getLogger(__name__).warning(
+                "ИСПОЛЬЗУЕТСЯ ДЕФОЛТНЫЙ SECRET_KEY! Задайте SECRET_KEY в .env для production."
+            )
+        return self
 
     @model_validator(mode="after")
     def _normalize_sqlite_path(self):
@@ -50,6 +70,26 @@ class Settings(BaseSettings):
         p = Path(self.upload_dir)
         p.mkdir(parents=True, exist_ok=True)
         return p
+
+    @property
+    def sites_path(self) -> Path:
+        p = Path(self.sites_dir)
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    @property
+    def fonts_path(self) -> Path:
+        p = Path(self.fonts_dir)
+        p.mkdir(parents=True, exist_ok=True)
+        return p
+
+    @property
+    def max_font_bytes(self) -> int:
+        return self.max_font_mb * 1024 * 1024
+
+    @property
+    def max_project_size_bytes(self) -> int:
+        return self.max_project_size_mb * 1024 * 1024
 
 
 @lru_cache

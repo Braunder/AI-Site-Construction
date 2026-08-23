@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Личный кабинет — Мои проекты | AI Site Construction{% endblock %}
+{% block title %}История проектов — AI Site Construction{% endblock %}
 {% block content %}
 <div class="container">
   <!-- Header with User Info -->
   <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
-    <h1 class="h3 mb-0">👤 Личный кабинет</h1>
+    <h1 class="h3 mb-0">📜 История проектов</h1>
     
     <!-- User Badge -->
     {% if user %}
@@ -17,49 +17,17 @@
     {% endif %}
   </div>
 
-  <!-- User Info Card -->
-  <div class="card mb-4 shadow-sm border-0 fade-up">
+  <!-- Info Card -->
+  <div class="card mb-4 shadow-sm border-0">
     <div class="card-body">
-      <div class="d-flex justify-content-between align-items-start mb-3">
-        <h5 class="card-title mb-0">👤 Информация о пользователе</h5>
-        {% if user.is_admin %}
-          <a href="/admin" class="btn btn-warning btn-sm">⚙️ Админ-панель</a>
-        {% endif %}
-      </div>
-      <div class="row align-items-center">
-        <div class="col-md-4">
-          <p class="mb-1"><strong>Логин:</strong> {{ user.username }}</p>
-          {% if user.is_admin %}
-            <span class="badge bg-danger">Администратор</span>
-          {% endif %}
-          <span class="badge {{ 'bg-success' if plan.key == 'premium' else ('bg-primary' if plan.key == 'standard' else 'bg-secondary') }}">
-            💳 {{ plan.title }}
-          </span>
-        </div>
-        <div class="col-md-4">
-          {% if user.is_admin or user.generation_limit == -1 %}
-            <span class="badge bg-success">♾️ Безлимитные генерации</span>
-          {% else %}
-            <p class="mb-1"><strong>Квота:</strong> {{ user.generation_used }} / {{ user.generation_limit }}</p>
-            <div class="progress" style="height: 6px;">
-              {% set pct = (user.generation_used / user.generation_limit * 100) | round | int %}
-              <div class="progress-bar {{ 'bg-danger' if pct >= 90 else ('bg-warning' if pct >= 70 else 'bg-success') }}"
-                   style="width: {{ pct }}%"></div>
-            </div>
-          {% endif %}
-        </div>
-        <div class="col-md-4 text-md-end">
-          <small class="text-muted">
-            Зарегистрирован: {{ user.created_at.strftime('%d.%m.%Y') }}
-          </small>
-        </div>
-      </div>
+      <p class="mb-0 text-muted">
+        Здесь отображаются все ваши проекты в хронологическом порядке. 
+        Используйте фильтры для удобного поиска.
+      </p>
     </div>
   </div>
 
-  <!-- Projects Section -->
-  <h3 class="mb-3 fade-up">📁 Мои проекты</h3>
-  
+  <!-- Projects Table -->
   {% if projects %}
   <div class="table-responsive shadow-sm">
     <table class="table table-hover align-middle mb-0">
@@ -108,24 +76,12 @@
   <div class="card shadow-sm border-0">
     <div class="card-body text-center py-5">
       <div class="display-1 mb-3">📭</div>
-      <h4>У вас пока нет проектов</h4>
-      <p class="text-muted mb-4">Создайте свой первый сайт, чтобы начать использовать возможности AI Site Construction!</p>
+      <h4>История пуста</h4>
+      <p class="text-muted mb-4">У вас пока нет проектов в истории.</p>
       <a href="/generate" class="btn btn-primary btn-lg">Создать первый сайт →</a>
     </div>
   </div>
   {% endif %}
-
-  <!-- Stats Section -->
-  <div class="row mt-4 g-3">
-    <div class="col-md-4">
-      <div class="card h-100 shadow-sm border-0">
-        <div class="card-body text-center py-4">
-          <h2 class="display-5 fw-bold">{{ projects|length }}</h2>
-          <p class="text-muted mb-0">Всего проектов</p>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <!-- Back to Home -->
   <div class="mt-4 text-center">

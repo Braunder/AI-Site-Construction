@@ -1,64 +1,240 @@
 {% extends "base.html" %}
 {% block title %}{{ project.title }} — AI Site Construction{% endblock %}
 {% block content %}
-<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-  <h1 class="h4 mb-0 text-truncate" style="max-width: 30rem;">{{ project.title }}</h1>
-  <span id="status-badge" data-status="{{ project.status }}"
-        class="badge text-bg-{{ 'success' if project.status == 'done' else ('danger' if project.status == 'error' else 'warning') }}">
-    {% if project.status == 'done' %}готов{% elif project.status == 'error' %}ошибка{% else %}в работе{% endif %}
-  </span>
-  <div class="ms-auto d-flex gap-2">
-    <a class="btn btn-outline-secondary btn-sm" href="/api/projects/{{ project.id }}/download">Скачать .html</a>
-    <button class="btn btn-outline-warning btn-sm" id="regen-btn">Перегенерировать</button>
-    <button class="btn btn-outline-danger btn-sm" id="delete-btn">Удалить</button>
-  </div>
-</div>
-
-<div id="error-alert" class="alert alert-danger {% if project.status != 'error' %}d-none{% endif %}">
-  {{ project.error_message or '' }}
-</div>
-
-<div class="row g-3">
-  <div class="col-lg-8">
-    <div class="preview-wrap">
-      <iframe id="preview" src="/projects/{{ project.id }}/preview"
-              sandbox="allow-scripts" title="Предпросмотр сайта"></iframe>
+<div class="container">
+  <!-- Header with User Info -->
+  <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+    <h1 class="h4 mb-0 text-truncate" style="max-width: 30rem;">{{ project.title }}</h1>
+    
+    <!-- Status Badge -->
+    <span id="status-badge" 
+          data-status="{{ project.status }}"
+          class="badge text-bg-{{ 'success' if project.status == 'done' else ('danger' if project.status == 'error' else 'warning') }}">
+      {% if project.status == 'done' %}✅ готов{% elif project.status == 'error' %}❌ ошибка{% else %}⏳ в работе{% endif %}
+    </span>
+    
+    <!-- Actions -->
+    <div class="ms-auto d-flex gap-2 align-items-center">
+      <!-- User Info Badge -->
+      {% if user %}
+        <span class="text-muted small me-3">👤 {{ user.username }}</span>
+        {% if user.is_admin %}
+          <span class="badge bg-danger small">Админ</span>
+        {% endif %}
+      {% else %}
+        <a href="/login" class="btn btn-outline-primary btn-sm">Войти</a>
+      {% endif %}
+      
+      <!-- Action Buttons -->
+      <a class="btn btn-outline-secondary btn-sm" href="/api/projects/{{ project.id }}/download">⬇️ Скачать .html</a>
+      {% if project.is_multifile %}
+      <a class="btn btn-outline-secondary btn-sm" href="/api/projects/{{ project.id }}/download-zip">🗜️ Скачать .zip</a>
+      {% endif %}
+      <button class="btn btn-outline-warning btn-sm" id="regen-btn">🔄 Перегенерировать</button>
+      <button class="btn btn-outline-danger btn-sm" id="delete-btn">🗑️ Удалить</button>
     </div>
   </div>
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header">Редактирование через чат</div>
-      <div class="card-body chat-body" id="chat-body">
-        {% for h in project.history %}
-        <div class="chat-entry mb-2">
-          <span class="badge text-bg-{{ 'primary' if h.kind == 'edit' else 'secondary' }}">
-            {{ 'правка' if h.kind == 'edit' else ('перегенерация' if h.kind == 'regenerate' else 'генерация') }}
-          </span>
-          <div class="small">{{ h.instruction }}</div>
-          <div class="text-muted" style="font-size:.7rem">{{ h.created_at.strftime('%d.%m %H:%M') }}</div>
+
+  <!-- Error Alert -->
+  <div id="error-alert" class="alert alert-danger {% if project.status != 'error' %}d-none{% endif %}">
+    {{ project.error_message or '' }}
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="row g-3 fade-up">
+    <!-- Preview Section -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 mb-3">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">👁️ Предпросмотр сайта</h5>
+          <span class="text-muted small" id="preview-status">Загрузка...</span>
         </div>
-        {% else %}
-        <p class="text-muted small">История пуста — сайт ещё генерируется.</p>
-        {% endfor %}
-        <div id="chat-thinking" class="text-muted small d-none">
-          <span class="spinner-border spinner-border-sm"></span> LLM обновляет сайт…
+        <div class="card-body p-0">
+          <div class="preview-wrap">
+            <iframe id="preview" 
+                    src="/projects/{{ project.id }}/preview"
+                    sandbox="allow-scripts" 
+                    title="Предпросмотр сайта"
+                    style="width: 100%; height: 600px; border: none;"></iframe>
+          </div>
         </div>
       </div>
-      <div class="card-footer">
-        <form id="chat-form" class="d-flex gap-2">
-          <input type="text" class="form-control" id="chat-input" maxlength="2000"
-                 placeholder="Например: сделай шапку тёмнее" autocomplete="off">
-          <button class="btn btn-primary" id="chat-send" type="submit">→</button>
-        </form>
+
+      <!-- Project Details Card -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-light">
+          <h5 class="mb-0">📋 Информация о проекте</h5>
+        </div>
+        <div class="card-body small">
+          <p><strong>Создан:</strong> {{ project.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
+          <p><strong>ID проекта:</strong> {{ project.id[:12] }}...</p>
+          {% if project.prompt %}
+          <p class="mt-3"><strong>Промпт:</strong></p>
+          <blockquote class="border rounded p-3 bg-light">
+            {{ project.prompt[:200] }}{% if project.prompt|length > 200 %}...{% endif %}
+          </blockquote>
+          {% endif %}
+        </div>
       </div>
     </div>
+
+    <!-- Chat Editor Section -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">💬 Редактирование через чат</h5>
+        </div>
+        <div class="card-body chat-body" id="chat-body">
+          {% for h in project.history %}
+          <div class="chat-entry mb-2 p-2 bg-light rounded">
+            <span class="badge text-bg-{{ 'primary' if h.kind == 'edit' else ('secondary' if h.kind == 'regenerate' else 'info') }} me-1">
+              {{ '✏️ правка' if h.kind == 'edit' else ('🔄 перегенерация' if h.kind == 'regenerate' else '✨ генерация') }}
+            </span>
+            <div class="small">{{ h.instruction }}</div>
+            <div class="text-muted" style="font-size:0.7rem">{{ h.created_at.strftime('%d.%m %H:%M') }}</div>
+          </div>
+          {% else %}
+          <p class="text-muted small text-center py-3">
+            История пуста — сайт ещё генерируется или это новый проект.
+          </p>
+          {% endfor %}
+          
+          <!-- Thinking Indicator -->
+          <div id="chat-thinking" class="text-muted small d-none p-2 bg-light rounded">
+            <span class="spinner-border spinner-border-sm"></span> LLM обновляет сайт…
+          </div>
+        </div>
+        <div class="card-footer bg-light">
+          <form id="chat-form" class="d-flex gap-2">
+            <input type="text" 
+                   class="form-control flex-grow-1" 
+                   id="chat-input" 
+                   maxlength="2000"
+                   placeholder="Например: сделай шапку тёмнее, добавь контакты..." 
+                   autocomplete="off">
+            <button class="btn btn-primary" id="chat-send" type="submit">→</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Files Manager (multifile projects) -->
+  {% if project.is_multifile %}
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <span class="fw-bold">📂 Файлы проекта</span>
+      <span class="text-muted small">Изображения, шрифты, CSS/JS — доступны сайту по имени файла</span>
+    </div>
+    <div class="card-body">
+      <!-- Upload -->
+      <form id="asset-upload-form" class="row g-2 align-items-end mb-3">
+        <div class="col-md-9">
+          <input type="file" class="form-control" id="asset-file"
+                 accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.ico,.css,.js,.woff2,.woff,.ttf,.json,.csv" required>
+          <div class="invalid-feedback" id="asset-error"></div>
+        </div>
+        <div class="col-md-3">
+          <button type="submit" class="btn btn-primary w-100" id="asset-upload-btn">⬆️ Загрузить файл</button>
+        </div>
+      </form>
+      <!-- List -->
+      <div id="assets-list">
+        <p class="text-muted small mb-0" id="assets-empty">Файлов пока нет.</p>
+        <table class="table table-sm table-hover align-middle mb-0 d-none" id="assets-table">
+          <thead class="table-light">
+            <tr><th>Файл</th><th>Тип</th><th>Размер</th><th></th></tr>
+          </thead>
+          <tbody id="assets-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Back to Projects -->
+  <div class="mt-4 text-center">
+    <a href="/projects" class="btn btn-outline-secondary">← Вернуться к проектам</a>
   </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
-  window.PROJECT_ID = "{{ project.id }}";
-  window.PROJECT_STATUS = "{{ project.status }}";
+window.PROJECT_ID = "{{ project.id }}";
+window.PROJECT_STATUS = "{{ project.status }}";
 </script>
 <script src="{{ url_for('static', path='/js/detail.js') }}"></script>
+{% if project.is_multifile %}
+<script>
+(function () {
+  const pid = window.PROJECT_ID;
+  const KIND_RU = { image: '🖼️ изображение', style: '🎨 CSS', script: '📜 JS', font: '🔤 шрифт', data: '📊 данные', other: '📄 прочее' };
+
+  async function loadAssets() {
+    const resp = await fetch(`/api/projects/${pid}/assets`);
+    if (!resp.ok) return;
+    const items = await resp.json();
+    const table = document.getElementById('assets-table');
+    const empty = document.getElementById('assets-empty');
+    const tbody = document.getElementById('assets-tbody');
+    tbody.innerHTML = '';
+    if (!items.length) {
+      table.classList.add('d-none');
+      empty.classList.remove('d-none');
+      return;
+    }
+    empty.classList.add('d-none');
+    table.classList.remove('d-none');
+    for (const a of items) {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="fw-bold small">${a.name}</td>
+        <td class="small">${KIND_RU[a.kind] || a.kind}</td>
+        <td class="small text-muted">${(a.size / 1024).toFixed(1)} КБ</td>
+        <td class="text-end">
+          <a class="btn btn-outline-secondary btn-sm" href="/api/projects/${pid}/files/${encodeURIComponent(a.name)}" target="_blank">👁️</a>
+          <button class="btn btn-outline-danger btn-sm asset-del" data-name="${a.name}">🗑️</button>
+        </td>`;
+      tbody.appendChild(tr);
+    }
+    tbody.querySelectorAll('.asset-del').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm(`Удалить файл «${btn.dataset.name}»?`)) return;
+        const r = await fetch(`/api/projects/${pid}/assets/${encodeURIComponent(btn.dataset.name)}`, { method: 'DELETE' });
+        if (r.ok) loadAssets();
+      });
+    });
+  }
+
+  document.getElementById('asset-upload-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = document.getElementById('asset-file');
+    const errEl = document.getElementById('asset-error');
+    errEl.textContent = '';
+    input.classList.remove('is-invalid');
+    if (!input.files.length) return;
+    const fd = new FormData();
+    fd.append('file', input.files[0]);
+    const btn = document.getElementById('asset-upload-btn');
+    btn.disabled = true;
+    try {
+      const resp = await fetch(`/api/projects/${pid}/assets`, { method: 'POST', body: fd });
+      if (resp.ok) {
+        input.value = '';
+        loadAssets();
+      } else {
+        const data = await resp.json().catch(() => ({}));
+        errEl.textContent = data.detail || 'Ошибка загрузки';
+        input.classList.add('is-invalid');
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  loadAssets();
+})();
+</script>
+{% endif %}
 {% endblock %}

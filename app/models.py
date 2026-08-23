@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -11,10 +11,56 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def _fmt_dt(value: datetime | None) -> str:
+    """Дата-время без микросекунд: 2026-08-23 10:08:26."""
+    return value.strftime("%Y-%m-%d %H:%M:%S") if value else ""
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    username: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    hashed_password: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    # Тариф: free (одностраничник без изображений) / standard (референс + анимации + изображения) /
+    # premium (бета: многостраничные сайты, файловая система)
+    plan: Mapped[str] = mapped_column(String(20), default="free", nullable=False)
+    generation_limit: Mapped[int] = mapped_column(Integer, default=0)
+    generation_used: Mapped[int] = mapped_column(Integer, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
+
+    @property
+    def created_at_str(self) -> str:
+        return _fmt_dt(self.created_at)
+
+    projects: Mapped[list["Project"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class LLMProvider(Base):
+    __tablename__ = "llm_providers"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
+    base_url: Mapped[str] = mapped_column(String(500), nullable=False)
+    api_key: Mapped[str] = mapped_column(String(500), default="local")
+    model: Mapped[str] = mapped_column(String(200), nullable=False)
+    timeout: Mapped[float] = mapped_column(Float, default=600.0)
+    max_retries: Mapped[int] = mapped_column(Integer, default=2)
+    max_tokens: Mapped[int] = mapped_column(Integer, default=16000)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    priority: Mapped[int] = mapped_column(Integer, default=100, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
+
+
 class Project(Base):
     __tablename__ = "projects"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
     title: Mapped[str] = mapped_column(String(200), default="Без названия")
     prompt: Mapped[str] = mapped_column(Text)
     font: Mapped[str] = mapped_column(String(100), default="Inter")
@@ -24,15 +70,22 @@ class Project(Base):
     color_bg: Mapped[str] = mapped_column(String(7), default="#ffffff")
     image_path: Mapped[str | None] = mapped_column(String(500), nullable=True)
     current_html: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Многофайловый режим: сайт хранится в data/sites/<user_id>/<project_id>/ (index.html + ассеты)
+    is_multifile: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     llm_model: Mapped[str] = mapped_column(String(200), default="")
     status: Mapped[str] = mapped_column(String(20), default="pending")  # pending/processing/done/error
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow, onupdate=_utcnow)
 
+    user: Mapped["User"] = relationship(back_populates="projects")
     history: Mapped[list["History"]] = relationship(
         back_populates="project", cascade="all, delete-orphan", order_by="History.created_at"
     )
+
+    @property
+    def created_at_str(self) -> str:
+        return _fmt_dt(self.created_at)
 
 
 class History(Base):
@@ -44,5 +97,9 @@ class History(Base):
     instruction: Mapped[str] = mapped_column(Text, default="")
     html: Mapped[str] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=_utcnow)
+
+    @property
+    def created_at_str(self) -> str:
+        return _fmt_dt(self.created_at)
 
     project: Mapped[Project] = relationship(back_populates="history")

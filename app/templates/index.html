@@ -1,89 +1,159 @@
 {% extends "base.html" %}
-{% block title %}Генерация сайта — AI Site Construction{% endblock %}
+{% block title %}Главная | AI Site Construction{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-8">
-    <h1 class="h3 mb-3">Генерация сайта</h1>
-
-    <div class="mb-3">
-      <span class="me-2 text-muted small">Пресеты:</span>
-      {% for key, preset in presets.items() %}
-      <button type="button" class="btn btn-outline-secondary btn-sm me-1 preset-btn"
-              data-prompt="{{ preset.prompt }}">{{ preset.label }}</button>
-      {% endfor %}
+<div class="container">
+  <!-- Hero Section -->
+  <div class="hero-section text-center py-5 px-4 mb-5 fade-up">
+    <h1 class="display-4 fw-bold mb-3">🤖 AI Site <span class="text-warning">Construction</span></h1>
+    <p class="lead mb-4">Создавайте красивые современные сайты с помощью искусственного интеллекта — за минуты, а не дни</p>
+    <div class="d-flex gap-2 justify-content-center flex-wrap">
+      {% if user %}
+        <a href="/generate" class="btn btn-light btn-lg px-4">🚀 Начать генерацию</a>
+        <a href="/demos" class="btn btn-outline-light btn-lg px-4">🎨 Смотреть демо</a>
+      {% else %}
+        <a href="/login" class="btn btn-light btn-lg px-4">🚀 Начать генерацию</a>
+        <a href="/demos" class="btn btn-outline-light btn-lg px-4">🎨 Смотреть демо</a>
+      {% endif %}
     </div>
-
-    <form id="gen-form" novalidate>
-      <div class="mb-3">
-        <label for="prompt" class="form-label">Описание желаемого сайта</label>
-        <textarea class="form-control" id="prompt" name="prompt" rows="4" required
-                  maxlength="5000" placeholder="Например: сайт для кофейни — меню, атмосфера, бронирование столика…"></textarea>
-        <div class="invalid-feedback">Опишите сайт (до 5000 символов).</div>
-        <div class="form-text">
-          Примеры:
-          <a href="#" class="example-chip">пекарня</a>,
-          <a href="#" class="example-chip">фотограф</a>,
-          <a href="#" class="example-chip">IT-курсы</a>,
-          <a href="#" class="example-chip">стоматология</a>
-        </div>
-      </div>
-
-      <div class="row g-3 mb-3">
-        <div class="col-md-6">
-          <label for="font" class="form-label">Шрифт</label>
-          <select class="form-select" id="font" name="font">
-            {% for f in fonts %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label for="style" class="form-label">Стилевое направление</label>
-          <select class="form-select" id="style" name="style">
-            {% for key, name in styles.items() %}<option value="{{ key }}">{{ name }}</option>{% endfor %}
-          </select>
-        </div>
-      </div>
-
-      <div class="row g-3 mb-3">
-        <div class="col-md-4">
-          <label for="color_primary" class="form-label">Основной цвет</label>
-          <input type="color" class="form-control form-control-color w-100" id="color_primary"
-                 name="color_primary" value="#1f2937">
-        </div>
-        <div class="col-md-4">
-          <label for="color_accent" class="form-label">Акцентный цвет</label>
-          <input type="color" class="form-control form-control-color w-100" id="color_accent"
-                 name="color_accent" value="#3b82f6">
-        </div>
-        <div class="col-md-4">
-          <label for="color_bg" class="form-label">Фоновый цвет</label>
-          <input type="color" class="form-control form-control-color w-100" id="color_bg"
-                 name="color_bg" value="#ffffff">
-        </div>
-      </div>
-
-      <div class="mb-4">
-        <label class="form-label">Референсное изображение (JPG/PNG, до 5 МБ, необязательно)</label>
-        <div id="drop-zone" class="drop-zone">
-          <p class="mb-1">Перетащите изображение сюда или <u>выберите файл</u></p>
-          <p class="text-muted small mb-0" id="file-name">файл не выбран</p>
-          <img id="file-preview" class="drop-zone-preview d-none" alt="превью">
-        </div>
-        <input type="file" id="image" name="image" accept="image/jpeg,image/png" hidden>
-        <div class="invalid-feedback" id="image-error">Только JPG/PNG до 5 МБ.</div>
-      </div>
-
-      <button type="submit" class="btn btn-primary btn-lg w-100" id="submit-btn">Сгенерировать сайт</button>
-    </form>
   </div>
-</div>
 
-<div id="loading-overlay" class="loading-overlay d-none">
-  <div class="text-center text-white">
-    <div class="spinner-border mb-3" role="status"></div>
-    <div id="loading-text">Генерация сайта… это может занять несколько минут</div>
-  </div>
+  <!-- Features Section -->
+  <section class="mb-5 fade-up">
+    <h2 class="h3 fw-bold mb-4">✨ Возможности</h2>
+    <div class="row g-4">
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center py-4">
+            <div class="feature-icon mb-3">⚡</div>
+            <h5 class="card-title fw-bold mb-2">Быстрая генерация</h5>
+            <p class="card-text text-muted small mb-0">
+              Создавайте полноценные сайты за несколько минут с помощью ИИ
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center py-4">
+            <div class="feature-icon mb-3">🎨</div>
+            <h5 class="card-title fw-bold mb-2">Уникальный дизайн</h5>
+            <p class="card-text text-muted small mb-0">
+              Каждый сайт уникален благодаря гибким настройкам стиля
+            </p>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+          <div class="card-body text-center py-4">
+            <div class="feature-icon mb-3">📱</div>
+            <h5 class="card-title fw-bold mb-2">Адаптивный дизайн</h5>
+            <p class="card-text text-muted small mb-0">
+              Сайты отлично выглядят на любых устройствах
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="text-center py-5 mb-5 fade-up">
+    <div class="card border-0 shadow-sm hero-section">
+      <div class="card-body py-5">
+        <h2 class="h3 fw-bold mb-3">Готовы создать свой сайт?</h2>
+        <p class="mb-4 opacity-75">
+          Зарегистрируйтесь и начните создавать профессиональные сайты с помощью ИИ
+        </p>
+        {% if user %}
+          <a href="/generate" class="btn btn-light btn-lg px-5">
+            🚀 Начать генерацию
+          </a>
+        {% else %}
+          <a href="/login" class="btn btn-light btn-lg px-5">
+            🚀 Войти и начать
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </section>
 </div>
 {% endblock %}
+      <label class="form-label fw-bold">Референсное изображение (JPG/PNG, до 5 МБ)</label>
+      <div id="drop-zone" class="border rounded p-3 text-center bg-light">
+        <p class="mb-1">Перетащите изображение сюда или <u>выберите файл</u></p>
+        <p class="text-muted small mb-0" id="file-name">файл не выбран</p>
+        <img id="file-preview" class="drop-zone-preview d-none rounded" alt="превью">
+      </div>
+      <input type="file" 
+             id="image" 
+             name="image" 
+             accept="image/jpeg,image/png" 
+             hidden>
+      <div class="invalid-feedback" id="image-error">Только JPG/PNG до 5 МБ.</div>
+    </div>
+
+    <!-- Submit Button -->
+    <button type="submit" class="btn btn-primary btn-lg w-100" id="submit-btn">
+      🚀 Сгенерировать сайт
+    </button>
+  </form>
+
+  <!-- Loading Overlay -->
+  <div id="loading-overlay" class="loading-overlay d-none">
+    <div class="text-center text-white py-5">
+      <div class="spinner-border mb-3" role="status"></div>
+      <div id="loading-text">Генерация сайта… это может занять несколько минут</div>
+    </div>
+  </div>
+
+  <!-- Recent Projects History -->
+  {% if recent_projects %}
+  <h4 class="mt-5 mb-3">📌 История ваших проектов</h4>
+  <div class="table-responsive">
+    <table class="table table-sm table-hover align-middle">
+      <thead class="table-light">
+        <tr>
+          <th>ID</th>
+          <th>Название</th>
+          <th>Стиль</th>
+          <th>Статус</th>
+          <th>Дата</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rp in recent_projects %}
+        <tr>
+          <td class="text-muted small">{{ rp.id[:8] }}</td>
+          <td><a href="/projects/{{ rp.id }}" class="fw-bold text-decoration-none">{{ rp.title[:30] }}...</a></td>
+          <td><span class="badge bg-info text-dark">{{ rp.style }}</span></td>
+          <td>
+            {% if rp.status == 'done' %}
+              <span class="badge bg-success">✅</span>
+            {% elif rp.status == 'error' %}
+              <span class="badge bg-danger">❌</span>
+            {% else %}
+              <span class="badge bg-warning text-dark">⏳</span>
+            {% endif %}
+          </td>
+          <td class="small text-muted">{{ rp.created_at.strftime('%d.%m %H:%M') }}</td>
+          <td>
+            <a href="/projects/{{ rp.id }}" class="btn btn-sm btn-outline-primary">Открыть</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+  <!-- Back to Projects -->
+  <div class="mt-4 text-center">
+    <a href="/projects" class="btn btn-outline-secondary">← Вернуться к проектам</a>
+  </div>
+</div>
+
 {% block scripts %}
 <script src="{{ url_for('static', path='/js/main.js') }}"></script>
 {% endblock %}

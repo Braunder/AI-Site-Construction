@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}AI Site Construction — генерация сайтов с помощью ИИ{% endblock %}
+{% block content %}
+<!-- Hero Section -->
+<div class="bg-gradient-primary mb-5 text-white text-center py-5">
+  <div class="container">
+    <h1 class="display-4 fw-bold mb-3">AI Site Construction</h1>
+    <p class="lead mb-4">Генерация одностраничных сайтов с помощью искусственного интеллекта</p>
+    {% if user %}
+    <a href="/generate" class="btn btn-light btn-lg me-2">Создать сайт</a>
+    <a href="/projects" class="btn btn-outline-light btn-lg">Мои проекты</a>
+    {% else %}
+    <a href="/login" class="btn btn-light btn-lg me-2">Войти</a>
+    <a href="#demos" class="btn btn-outline-light btn-lg">Посмотреть примеры</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Demo Section -->
+<div class="container mb-5">
+  <h2 class="text-center mb-4">🎨 Демонстрация возможностей</h2>
+  <p class="text-muted text-center mb-5">Вот примеры сайтов, которые можно сгенерировать:</p>
+  
+  <div class="row g-4">
+    <!-- Landing Page Demo -->
+    <div class="col-lg-6">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="ratio ratio-16x9 bg-light">
+          <iframe src="/static/demos/landing.html" 
+                  sandbox="allow-scripts allow-same-origin" 
+                  title="Демо лендинга кофейни" 
+                  style="border: none; width: 100%; height: 100%;"></iframe>
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">📄 Лендинг</h5>
+          <p class="card-text text-muted small mb-2">Идеально для:</p>
+          <ul class="small text-muted mb-0">
+            <li>Продуктов и услуг</li>
+            <li>Мероприятий</li>
+            <li>Персонального бренда</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portfolio Demo -->
+    <div class="col-lg-6">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="ratio ratio-16x9 bg-light">
+          <iframe src="/static/demos/portfolio.html" 
+                  sandbox="allow-scripts allow-same-origin" 
+                  title="Демо портфолио" 
+                  style="border: none; width: 100%; height: 100%;"></iframe>
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">👤 Портфолио</h5>
+          <p class="card-text text-muted small mb-2">Идеально для:</p>
+          <ul class="small text-muted mb-0">
+            <li>Фрилансеров</li>
+            <li>Дизайнеров и фотографов</li>
+            <li>Разработчиков</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Business Card Demo -->
+    <div class="col-lg-6">
+      <div class="card h-100 shadow-sm border-0">
+        <div class="ratio ratio-16x9 bg-light">
+          <iframe src="/static/demos/business_card.html" 
+                  sandbox="allow-scripts allow-same-origin" 
+                  title="Демо визитки компании" 
+                  style="border: none; width: 100%; height: 100%;"></iframe>
+        </div>
+        <div class="card-body">
+          <h5 class="card-title">💼 Визитка</h5>
+          <p class="card-text text-muted small mb-2">Идеально для:</p>
+          <ul class="small text-muted mb-0">
+            <li>Компаний малого бизнеса</li>
+            <li>Специалистов</li>
+            <li>Стартапов</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="col-lg-6">
+      <div class="card h-100 shadow-sm border-0 bg-primary text-white">
+        <div class="card-body text-center py-5">
+          <h3 class="mb-3">Готовы создать свой сайт?</h3>
+          <p class="lead mb-4 opacity-75">
+            Авторизуйтесь, чтобы получить доступ к генератору сайтов с ИИ
+          </p>
+          {% if user %}
+          <a href="/generate" class="btn btn-light btn-lg">Перейти к генерации →</a>
+          {% else %}
+          <a href="/login" class="btn btn-light btn-lg">Войти и начать →</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Features Section -->
+<div class="bg-light py-5 mb-5">
+  <div class="container">
+    <h2 class="text-center mb-4">Что вы получите</h2>
+    <div class="row g-4 text-center">
+      <div class="col-md-3">
+        <div class="p-3">
+          <div class="display-5 mb-3">⚡</div>
+          <h5>Быстро</h5>
+          <p class="text-muted small">Готовый сайт за несколько минут</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="p-3">
+          <div class="display-5 mb-3">🎨</div>
+          <h5>Красиво</h5>
+          <p class="text-muted small">Современный дизайн и стиль</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="p-3">
+          <div class="display-5 mb-3">🤖</div>
+          <h5>Умно</h5>
+          <p class="text-muted small">Искусственный интеллект в работе</p>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="p-3">
+          <div class="display-5 mb-3">💾</div>
+          <h5>Сохраняется</h5>
+          <p class="text-muted small">Все проекты в личном кабинете</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CTA Section -->
+<div class="container text-center py-5">
+  <h2 class="mb-3">Начните создавать сайты прямо сейчас!</h2>
+  <p class="text-muted mb-4">Присоединяйтесь к тысячам пользователей, которые уже используют AI Site Construction</p>
+  {% if user %}
+  <a href="/generate" class="btn btn-primary btn-lg px-5">Создать сайт бесплатно</a>
+  {% else %}
+  <a href="/login" class="btn btn-primary btn-lg px-5">Войти в систему</a>
+  {% endif %}
+</div>
+{% endblock %}

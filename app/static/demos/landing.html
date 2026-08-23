@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LUMIÈRE — Магазин дизайнерского света</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #faf7f2;
+      --surface: #ffffff;
+      --ink: #1c1a17;
+      --muted: #8a8378;
+      --accent: #c96f2e;
+      --accent-dark: #a8571f;
+      --gold: #d9a441;
+      --line: rgba(28, 26, 23, .1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Manrope", system-ui, sans-serif;
+      background: var(--bg); color: var(--ink);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    h1, h2, h3, .serif { font-family: "Fraunces", serif; font-weight: 600; letter-spacing: -.01em; }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.1rem clamp(1.25rem, 5vw, 4rem);
+      background: rgba(250, 247, 242, .86);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { font-family: "Fraunces", serif; font-size: 1.45rem; font-weight: 700; letter-spacing: .04em; }
+    .brand em { color: var(--accent); font-style: normal; }
+    .nav-right { display: flex; align-items: center; gap: 1.6rem; }
+    nav .links a {
+      color: var(--muted); text-decoration: none; font-size: .9rem;
+      margin-right: 1.6rem; transition: color .2s;
+    }
+    nav .links a:hover { color: var(--accent); }
+    .cart-btn {
+      position: relative; display: inline-flex; align-items: center; gap: .5rem;
+      background: var(--ink); color: #fff; border: none; border-radius: 999px;
+      padding: .6rem 1.3rem; font-family: inherit; font-size: .86rem; font-weight: 600;
+      cursor: pointer; transition: transform .2s, box-shadow .2s;
+    }
+    .cart-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(28,26,23,.25); }
+    .cart-count {
+      background: var(--accent); color: #fff; border-radius: 999px;
+      min-width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+      font-size: .74rem;
+      transition: transform .3s cubic-bezier(.34, 1.56, .64, 1);
+    }
+    .cart-count.bump { transform: scale(1.45); }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 1200px; margin: 0 auto;
+      padding: clamp(4rem, 11vh, 6.5rem) clamp(1.25rem, 5vw, 4rem) clamp(3rem, 8vh, 4.5rem);
+      display: grid; grid-template-columns: 1.05fr .95fr; gap: 3rem; align-items: center;
+    }
+    .hero .eyebrow {
+      display: inline-flex; align-items: center; gap: .55rem;
+      color: var(--accent); font-size: .78rem; letter-spacing: .3em;
+      text-transform: uppercase; margin-bottom: 1.5rem; font-weight: 600;
+    }
+    .hero .eyebrow::before { content: ""; width: 36px; height: 1px; background: var(--accent); }
+    .hero h1 { font-size: clamp(2.6rem, 5.5vw, 4.4rem); line-height: 1.05; margin-bottom: 1.4rem; }
+    .hero h1 em { color: var(--accent); font-style: italic; }
+    .hero p { color: var(--muted); max-width: 460px; font-weight: 300; font-size: 1.06rem; margin-bottom: 2.4rem; }
+    .btn {
+      display: inline-block; padding: 1rem 2.3rem; border-radius: 999px;
+      text-decoration: none; font-size: .9rem; font-weight: 600;
+      transition: transform .22s, box-shadow .22s, background .22s;
+    }
+    .btn-accent { background: var(--accent); color: #fff; box-shadow: 0 12px 30px rgba(201, 111, 46, .32); }
+    .btn-accent:hover { background: var(--accent-dark); transform: translateY(-3px); box-shadow: 0 18px 42px rgba(201,111,46,.42); }
+    .hero-photo {
+      min-height: 420px; border-radius: 26px;
+      background:
+        radial-gradient(circle at 70% 25%, rgba(217, 164, 65, .25), transparent 55%),
+        linear-gradient(150deg, #f3ece1, #e9dfd0);
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--line);
+      box-shadow: 0 30px 70px rgba(28, 26, 23, .12);
+      position: relative; overflow: hidden;
+    }
+    .hero-photo::before {
+      content: ""; position: absolute; width: 300px; height: 300px; border-radius: 50%;
+      border: 1px solid rgba(201, 111, 46, .18);
+      animation: float 7s ease-in-out infinite;
+    }
+    @keyframes float { 0%,100% { transform: translateY(0);} 50% { transform: translateY(-18px);} }
+    .ph-label {
+      text-align: center; color: var(--muted); font-size: .88rem;
+      border: 2px dashed rgba(201, 111, 46, .45); padding: 1.8rem 2.4rem;
+      border-radius: 16px; background: rgba(255, 255, 255, .65);
+      position: relative; z-index: 1;
+    }
+    .ph-label .icon { font-size: 2.2rem; display: block; margin-bottom: .6rem; }
+
+    /* ── Marquee ── */
+    .marquee {
+      border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+      background: var(--surface); overflow: hidden; padding: .9rem 0;
+    }
+    .marquee-track {
+      display: flex; gap: 3.5rem; white-space: nowrap;
+      animation: marquee 26s linear infinite;
+      font-family: "Fraunces", serif; font-size: .95rem; color: var(--muted);
+    }
+    .marquee-track span i { color: var(--accent); font-style: normal; margin-right: .5rem; }
+    @keyframes marquee { to { transform: translateX(-50%); } }
+
+    /* ── Products ── */
+    .section { max-width: 1200px; margin: 0 auto; padding: clamp(4rem, 10vh, 6rem) clamp(1.25rem, 5vw, 4rem); }
+    .section-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 1rem; margin-bottom: 2.8rem; }
+    .section-head h2 { font-size: clamp(1.9rem, 4vw, 2.7rem); }
+    .section-head .all { color: var(--accent); text-decoration: none; font-weight: 600; font-size: .92rem; }
+    .products { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.6rem; }
+    .product {
+      background: var(--surface); border: 1px solid var(--line); border-radius: 20px;
+      overflow: hidden; transition: transform .3s, box-shadow .3s;
+    }
+    .product:hover { transform: translateY(-8px); box-shadow: 0 26px 54px rgba(28, 26, 23, .14); }
+    .product .ph {
+      height: 220px; display: flex; align-items: center; justify-content: center;
+      background: linear-gradient(150deg, #f3ece1, #e9dfd0);
+      border-bottom: 1px solid var(--line);
+    }
+    .product .ph .ph-mini {
+      color: var(--muted); font-size: .8rem; text-align: center;
+      border: 1.5px dashed rgba(201, 111, 46, .4); padding: .9rem 1.3rem; border-radius: 10px;
+    }
+    .product-body { padding: 1.5rem 1.6rem 1.7rem; }
+    .product-body .cat { color: var(--muted); font-size: .74rem; letter-spacing: .18em; text-transform: uppercase; }
+    .product-body h3 { font-size: 1.25rem; margin: .4rem 0 .3rem; }
+    .product-body .desc { color: var(--muted); font-size: .9rem; font-weight: 300; min-height: 2.6em; }
+    .buy-row { display: flex; justify-content: space-between; align-items: center; margin-top: 1.1rem; }
+    .price { font-family: "Fraunces", serif; font-size: 1.3rem; font-weight: 700; }
+    .add-btn {
+      background: var(--ink); color: #fff; border: none; border-radius: 999px;
+      padding: .55rem 1.25rem; font-family: inherit; font-size: .84rem; font-weight: 600;
+      cursor: pointer; transition: background .2s, transform .2s;
+    }
+    .add-btn:hover { background: var(--accent); transform: scale(1.05); }
+
+    /* ── Advantages ── */
+    .adv { background: var(--ink); color: #f5f1ea; }
+    .adv-inner { max-width: 1200px; margin: 0 auto; padding: clamp(3.5rem, 9vh, 5.5rem) clamp(1.25rem, 5vw, 4rem); }
+    .adv h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2.8rem; }
+    .adv h2 em { color: var(--gold); font-style: italic; }
+    .adv-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 2rem; }
+    .adv-item { border-top: 1px solid rgba(217, 164, 65, .35); padding-top: 1.2rem; }
+    .adv-item .n { font-family: "Fraunces", serif; color: var(--gold); font-size: 1rem; margin-bottom: .5rem; }
+    .adv-item h3 { font-size: 1.15rem; margin-bottom: .4rem; }
+    .adv-item p { color: rgba(245, 241, 234, .6); font-size: .9rem; font-weight: 300; }
+
+    /* ── Subscribe ── */
+    .sub { text-align: center; padding-bottom: clamp(4.5rem, 11vh, 6.5rem); }
+    .sub h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); margin-bottom: .8rem; }
+    .sub p { color: var(--muted); margin-bottom: 2rem; font-weight: 300; }
+
+    footer {
+      text-align: center; padding: 2.2rem; color: var(--muted);
+      font-size: .82rem; border-top: 1px solid var(--line);
+    }
+
+    /* Reveal */
+    .reveal { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    @media (max-width: 900px) {
+      .hero { grid-template-columns: 1fr; }
+      nav .links { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="brand">LUMI<em>È</em>RE</div>
+    <div class="nav-right">
+      <div class="links">
+        <a href="#catalog">Каталог</a>
+        <a href="#adv">Доставка</a>
+        <a href="#sub">Рассылка</a>
+      </div>
+      <button class="cart-btn" id="cart-btn">🛒 Корзина <span class="cart-count" id="cart-count">0</span></button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <div class="eyebrow">Дизайнерский свет</div>
+      <h1>Свет, который<br>делает <em>дом</em> домом</h1>
+      <p>Авторские светильники из латуни, стекла и дерева.
+         Малые партии, ручная сборка, гарантия 5 лет.</p>
+      <a class="btn btn-accent" href="#catalog">В каталог</a>
+    </div>
+    <div class="hero-photo">
+      <div class="ph-label">
+        <span class="icon">📷</span>
+        Фото главного героя-продукта<br>
+        <small>(загружается в режиме «Полноценный сайт»)</small>
+      </div>
+    </div>
+  </header>
+
+  <div class="marquee">
+    <div class="marquee-track">
+      <span><i>✦</i> Бесплатная доставка от 10 000 ₽</span>
+      <span><i>✦</i> Гарантия 5 лет</span>
+      <span><i>✦</i> Ручная сборка</span>
+      <span><i>✦</i> Возврат 30 дней</span>
+      <span><i>✦</i> Бесплатная доставка от 10 000 ₽</span>
+      <span><i>✦</i> Гарантия 5 лет</span>
+      <span><i>✦</i> Ручная сборка</span>
+      <span><i>✦</i> Возврат 30 дней</span>
+    </div>
+  </div>
+
+  <section class="section" id="catalog">
+    <div class="section-head reveal">
+      <h2>Хиты сезона</h2>
+      <a class="all" href="#">Весь каталог →</a>
+    </div>
+    <div class="products">
+      <article class="product reveal">
+        <div class="ph"><div class="ph-mini">📷 Фото товара</div></div>
+        <div class="product-body">
+          <div class="cat">Подвес</div>
+          <h3>Aurelia Brass</h3>
+          <p class="desc">Латунный подвес с матовым стеклом, тёплый свет 2700K.</p>
+          <div class="buy-row">
+            <span class="price">14 900 ₽</span>
+            <button class="add-btn" data-name="Aurelia Brass">В корзину</button>
+          </div>
+        </div>
+      </article>
+      <article class="product reveal">
+        <div class="ph"><div class="ph-mini">📷 Фото товара</div></div>
+        <div class="product-body">
+          <div class="cat">Торшер</div>
+          <h3>Nord Arc</h3>
+          <p class="desc">Дугообразный торшер из дуба, диммер на шнуре.</p>
+          <div class="buy-row">
+            <span class="price">22 400 ₽</span>
+            <button class="add-btn" data-name="Nord Arc">В корзину</button>
+          </div>
+        </div>
+      </article>
+      <article class="product reveal">
+        <div class="ph"><div class="ph-mini">📷 Фото товара</div></div>
+        <div class="product-body">
+          <div class="cat">Настольная</div>
+          <h3>Muto Mini</h3>
+          <p class="desc">Компактная лампа с аккумулятором, 40 часов работы.</p>
+          <div class="buy-row">
+            <span class="price">8 700 ₽</span>
+            <button class="add-btn" data-name="Muto Mini">В корзину</button>
+          </div>
+        </div>
+      </article>
+      <article class="product reveal">
+        <div class="ph"><div class="ph-mini">📷 Фото товара</div></div>
+        <div class="product-body">
+          <div class="cat">Бра</div>
+          <h3>Verre Duo</h3>
+          <p class="desc">Парное бра из выдувного стекла, ручная работа.</p>
+          <div class="buy-row">
+            <span class="price">18 200 ₽</span>
+            <button class="add-btn" data-name="Verre Duo">В корзину</button>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="adv" id="adv">
+    <div class="adv-inner">
+      <h2 class="reveal">Почему у нас покупают <em>дважды</em></h2>
+      <div class="adv-grid">
+        <div class="adv-item reveal">
+          <div class="n">01</div>
+          <h3>Собственное производство</h3>
+          <p>Мастерская в Москве, каждый светильник проходит 12 этапов контроля.</p>
+        </div>
+        <div class="adv-item reveal">
+          <div class="n">02</div>
+          <h3>Доставка за 1–2 дня</h3>
+          <p>Курьером по Москве и СДЭК по России, страховка включена.</p>
+        </div>
+        <div class="adv-item reveal">
+          <div class="n">03</div>
+          <h3>Гарантия 5 лет</h3>
+          <p>Ремонтируем или меняем без вопросов — даже после гарантии скидка 50%.</p>
+        </div>
+        <div class="adv-item reveal">
+          <div class="n">04</div>
+          <h3>Подбор света в подарок</h3>
+          <p>Дизайнер поможет собрать сценарий освещения под ваш интерьер.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section sub" id="sub">
+    <h2 class="reveal">−10% на первый заказ</h2>
+    <p class="reveal">Подпишитесь на рассылку — пришлём промокод и новые коллекции первыми.</p>
+    <a class="btn btn-accent reveal" href="mailto:hello@lumiere.ru">hello@lumiere.ru</a>
+  </section>
+
+  <footer>© 2026 LUMIÈRE · Дизайнерский свет · Москва</footer>
+
+  <script>
+    // Корзина-счётчик с анимацией
+    var count = 0;
+    var counter = document.getElementById('cart-count');
+    document.querySelectorAll('.add-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        count += 1;
+        counter.textContent = count;
+        counter.classList.add('bump');
+        setTimeout(function () { counter.classList.remove('bump'); }, 320);
+        btn.textContent = '✓ Добавлено';
+        setTimeout(function () { btn.textContent = 'В корзину'; }, 1200);
+      });
+    });
+
+    // Scroll-reveal
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+      });
+    }, { threshold: .12 });
+    document.querySelectorAll('.reveal').forEach(function (el) { observer.observe(el); });
+  </script>
+</body>
+</html>

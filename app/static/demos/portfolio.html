@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>МАКС ВОЛКОВ — 3D Artist · CGI · Motion</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07080d;
+      --surface: #0e1018;
+      --card: #12141f;
+      --text: #e8ebf4;
+      --muted: #7d8698;
+      --neon: #00f0ff;
+      --violet: #8b5cf6;
+      --magenta: #f0f;
+      --line: rgba(0, 240, 255, .16);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: "Space Grotesk", system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    .mono { font-family: "JetBrains Mono", monospace; }
+
+    /* ── Фоновая сетка в перспективе ── */
+    .grid-bg {
+      position: fixed; inset: 0; z-index: -1;
+      background:
+        linear-gradient(rgba(0, 240, 255, .04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, .04) 1px, transparent 1px);
+      background-size: 56px 56px;
+      mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 70%, transparent 100%);
+      -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 30%, #000 70%, transparent 100%);
+    }
+
+    /* ── Nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 50;
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1.1rem clamp(1.25rem, 5vw, 4rem);
+      background: rgba(7, 8, 13, .8);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .logo { font-weight: 700; font-size: 1.1rem; letter-spacing: .06em; }
+    .logo .cursor { color: var(--neon); animation: blink 1.1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    nav .links a {
+      color: var(--muted); text-decoration: none; margin-left: 2rem;
+      font-size: .86rem; letter-spacing: .08em; text-transform: uppercase;
+      transition: color .2s, text-shadow .2s;
+    }
+    nav .links a:hover { color: var(--neon); text-shadow: 0 0 14px rgba(0, 240, 255, .6); }
+
+    /* ── Hero ── */
+    .hero {
+      max-width: 1200px; margin: 0 auto;
+      padding: clamp(4.5rem, 13vh, 7.5rem) clamp(1.25rem, 5vw, 4rem);
+    }
+    .status {
+      display: inline-flex; align-items: center; gap: .6rem;
+      font-family: "JetBrains Mono", monospace; font-size: .78rem;
+      color: var(--neon); border: 1px solid var(--line);
+      padding: .45rem 1.1rem; border-radius: 999px; margin-bottom: 2rem;
+    }
+    .status .dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--neon);
+      box-shadow: 0 0 12px var(--neon); animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1);} 50% { opacity: .5; transform: scale(1.3);} }
+    .hero h1 {
+      font-size: clamp(2.8rem, 7.5vw, 5.6rem);
+      line-height: 1.0; letter-spacing: -.02em; margin-bottom: 1.6rem;
+    }
+    .hero h1 .grad {
+      background: linear-gradient(100deg, var(--neon) 0%, var(--violet) 55%, var(--magenta) 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .hero p { color: var(--muted); max-width: 540px; font-weight: 400; font-size: 1.06rem; margin-bottom: 2.6rem; }
+    .hero p b { color: var(--text); font-weight: 500; }
+    .cta-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .btn {
+      display: inline-block; padding: .95rem 2.2rem; border-radius: 12px;
+      text-decoration: none; font-size: .9rem; font-weight: 600;
+      font-family: "JetBrains Mono", monospace;
+      transition: all .25s;
+    }
+    .btn-neon {
+      background: var(--neon); color: #05070c;
+      box-shadow: 0 0 28px rgba(0, 240, 255, .4);
+    }
+    .btn-neon:hover { transform: translateY(-3px); box-shadow: 0 0 48px rgba(0, 240, 255, .65); }
+    .btn-ghost { border: 1px solid var(--line); color: var(--text); }
+    .btn-ghost:hover { border-color: var(--neon); color: var(--neon); box-shadow: 0 0 20px rgba(0,240,255,.2); }
+
+    /* ── Stats strip ── */
+    .stats {
+      max-width: 1200px; margin: 0 auto; padding: 0 clamp(1.25rem, 5vw, 4rem) 3rem;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1.5rem;
+    }
+    .stat {
+      border: 1px solid var(--line); border-radius: 14px; padding: 1.3rem 1.5rem;
+      background: rgba(14, 16, 24, .6);
+      transition: border-color .25s, box-shadow .25s;
+    }
+    .stat:hover { border-color: rgba(0, 240, 255, .45); box-shadow: 0 0 24px rgba(0, 240, 255, .12); }
+    .stat strong { display: block; font-size: 1.9rem; font-weight: 700; color: var(--neon); }
+    .stat span { color: var(--muted); font-size: .78rem; letter-spacing: .14em; text-transform: uppercase; }
+
+    /* ── Works ── */
+    .section { max-width: 1200px; margin: 0 auto; padding: clamp(4rem, 10vh, 6rem) clamp(1.25rem, 5vw, 4rem); }
+    .sec-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 1rem; margin-bottom: 2.8rem; }
+    .sec-head h2 { font-size: clamp(1.9rem, 4vw, 2.8rem); }
+    .sec-head .mono { color: var(--muted); font-size: .82rem; }
+    .works { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.6rem; }
+    .work {
+      background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+      overflow: hidden;
+      transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .35s, border-color .35s;
+      transform-style: preserve-3d;
+    }
+    .work:hover {
+      transform: translateY(-10px) rotateX(3deg);
+      border-color: rgba(0, 240, 255, .5);
+      box-shadow: 0 30px 60px rgba(0, 0, 0, .6), 0 0 40px rgba(0, 240, 255, .12);
+    }
+    .render {
+      height: 230px; position: relative; overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .r1 { background: linear-gradient(140deg, #0a2a3a, #06121c); }
+    .r2 { background: linear-gradient(140deg, #1d1240, #0c0718); }
+    .r3 { background: linear-gradient(140deg, #3a0a2e, #180612); }
+    .render::before {
+      content: ""; position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(0, 240, 255, .18), transparent 50%),
+        radial-gradient(circle at 75% 70%, rgba(139, 92, 246, .18), transparent 50%);
+    }
+    .render .wire {
+      position: absolute; inset: 0;
+      background:
+        linear-gradient(rgba(0, 240, 255, .07) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, .07) 1px, transparent 1px);
+      background-size: 28px 28px;
+      transform: perspective(400px) rotateX(28deg) scale(1.4);
+      transform-origin: bottom;
+    }
+    .render .ph-label {
+      position: relative; z-index: 1;
+      color: var(--muted); font-size: .8rem; text-align: center;
+      border: 1.5px dashed rgba(0, 240, 255, .4); padding: 1rem 1.6rem;
+      border-radius: 10px; background: rgba(7, 8, 13, .7);
+      font-family: "JetBrains Mono", monospace;
+    }
+    .work-body { padding: 1.5rem 1.7rem 1.7rem; }
+    .tags { display: flex; gap: .45rem; flex-wrap: wrap; margin-bottom: .9rem; }
+    .tag {
+      font-family: "JetBrains Mono", monospace; font-size: .68rem;
+      color: var(--neon); border: 1px solid var(--line);
+      padding: .26rem .7rem; border-radius: 6px;
+    }
+    .work-body h3 { font-size: 1.3rem; margin-bottom: .45rem; }
+    .work-body p { color: var(--muted); font-size: .92rem; }
+    .work-body .tools { margin-top: 1rem; color: var(--muted); font-size: .78rem; font-family: "JetBrains Mono", monospace; }
+    .work-body .tools b { color: var(--violet); font-weight: 500; }
+
+    /* ── Skills ── */
+    .skills { background: var(--surface); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .skills-inner { max-width: 1200px; margin: 0 auto; padding: clamp(3.5rem, 9vh, 5.5rem) clamp(1.25rem, 5vw, 4rem); }
+    .skills h2 { font-size: clamp(1.8rem, 4vw, 2.5rem); margin-bottom: 2.6rem; }
+    .skill { margin-bottom: 1.6rem; }
+    .skill .row { display: flex; justify-content: space-between; margin-bottom: .55rem; font-size: .92rem; }
+    .skill .row .mono { color: var(--neon); }
+    .bar { height: 8px; background: var(--card); border-radius: 999px; overflow: hidden; border: 1px solid var(--line); }
+    .bar i {
+      display: block; height: 100%; border-radius: 999px;
+      background: linear-gradient(90deg, var(--neon), var(--violet));
+      width: 0; transition: width 1.2s cubic-bezier(.2, .8, .2, 1);
+      box-shadow: 0 0 14px rgba(0, 240, 255, .5);
+    }
+
+    /* ── Contact ── */
+    .contact { text-align: center; padding-bottom: clamp(4.5rem, 12vh, 7rem); }
+    .contact h2 { font-size: clamp(2rem, 5vw, 3.2rem); margin-bottom: 1rem; }
+    .contact h2 .grad {
+      background: linear-gradient(100deg, var(--neon), var(--violet));
+      -webkit-background-clip: text; background-clip: text; color: transparent;
+    }
+    .contact p { color: var(--muted); margin-bottom: 2.4rem; }
+    .socials { display: flex; justify-content: center; gap: .9rem; flex-wrap: wrap; margin-top: 2.2rem; }
+    .socials a {
+      color: var(--text); text-decoration: none; font-size: .86rem;
+      font-family: "JetBrains Mono", monospace;
+      border: 1px solid var(--line); border-radius: 10px; padding: .65rem 1.4rem;
+      transition: all .2s;
+    }
+    .socials a:hover { border-color: var(--neon); color: var(--neon); box-shadow: 0 0 18px rgba(0,240,255,.25); }
+
+    footer {
+      text-align: center; padding: 2rem; color: var(--muted);
+      font-size: .78rem; font-family: "JetBrains Mono", monospace;
+      border-top: 1px solid var(--line);
+    }
+
+    .reveal { opacity: 0; transform: translateY(26px); transition: opacity .7s ease, transform .7s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+
+    @media (max-width: 800px) { nav .links { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="grid-bg"></div>
+  <nav>
+    <div class="logo mono">max.volkov<span class="cursor">_</span></div>
+    <div class="links">
+      <a href="#works">Работы</a>
+      <a href="#skills">Скиллы</a>
+      <a href="#contact">Контакт</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div class="status"><span class="dot"></span>OPEN FOR FREELANCE · Q1 2027</div>
+    <h1>3D-художник.<br>Превращаю идеи<br>в <span class="grad">пиксели мечты</span></h1>
+    <p>CGI для рекламы, игр и архитектуры. <b>Blender · Cinema 4D · Houdini · Unreal Engine.</b>
+       8 лет превращаю брифы в рендеры, которые продают.</p>
+    <div class="cta-row">
+      <a class="btn btn-neon" href="#works">Смотреть шоурил ↓</a>
+      <a class="btn btn-ghost" href="#contact">Обсудить проект</a>
+    </div>
+  </header>
+
+  <div class="stats">
+    <div class="stat reveal"><strong>8 лет</strong><span>в 3D</span></div>
+    <div class="stat reveal"><strong>140+</strong><span>проектов</span></div>
+    <div class="stat reveal"><strong>32</strong><span>клиента</span></div>
+    <div class="stat reveal"><strong>4K/8K</strong><span>рендер</span></div>
+  </div>
+
+  <section class="section" id="works">
+    <div class="sec-head reveal">
+      <h2>// Избранные работы</h2>
+      <span class="mono">2023 — 2026</span>
+    </div>
+    <div class="works">
+      <article class="work reveal">
+        <div class="render r1">
+          <div class="wire"></div>
+          <div class="ph-label">📷 Рендер: sci-fi город</div>
+        </div>
+        <div class="work-body">
+          <div class="tags"><span class="tag">environment</span><span class="tag">unreal 5</span></div>
+          <h3>NEO-DISTRICT 2099</h3>
+          <p>Кинематографичный город будущего для трейлера игры: 4K, 240 кадров, полный цикл от блокинга до грейда.</p>
+          <div class="tools">tools: <b>Blender · UE5 · DaVinci</b></div>
+        </div>
+      </article>
+      <article class="work reveal">
+        <div class="render r2">
+          <div class="wire"></div>
+          <div class="ph-label">📷 Рендер: продукт</div>
+        </div>
+        <div class="work-body">
+          <div class="tags"><span class="tag">product cgi</span><span class="tag">advertising</span></div>
+          <h3>AURA HEADPHONES</h3>
+          <p>Рекламный ролик наушников: жидкий металл, симуляция ткани, 6 финальных шотов для соцсетей бренда.</p>
+          <div class="tools">tools: <b>Cinema 4D · Redshift · Houdini</b></div>
+        </div>
+      </article>
+      <article class="work reveal">
+        <div class="render r3">
+          <div class="wire"></div>
+          <div class="ph-label">📷 Рендер: персонаж</div>
+        </div>
+        <div class="work-body">
+          <div class="tags"><span class="tag">character</span><span class="tag">sculpt</span></div>
+          <h3>THE KEEPER</h3>
+          <p>Персонаж для коллекционной фигурки: скульпт, ретопология, текстуры 8K, печать прошла с первого раза.</p>
+          <div class="tools">tools: <b>ZBrush · Substance · Cura</b></div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="skills" id="skills">
+    <div class="skills-inner">
+      <h2 class="reveal">// Инструменты</h2>
+      <div class="skill reveal">
+        <div class="row"><span>Blender / Моделирование</span><span class="mono">95%</span></div>
+        <div class="bar"><i data-w="95"></i></div>
+      </div>
+      <div class="skill reveal">
+        <div class="row"><span>Cinema 4D / Motion</span><span class="mono">88%</span></div>
+        <div class="bar"><i data-w="88"></i></div>
+      </div>
+      <div class="skill reveal">
+        <div class="row"><span>Houdini / Симуляции</span><span class="mono">76%</span></div>
+        <div class="bar"><i data-w="76"></i></div>
+      </div>
+      <div class="skill reveal">
+        <div class="row"><span>Unreal Engine / Рендер</span><span class="mono">82%</span></div>
+        <div class="bar"><i data-w="82"></i></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section contact" id="contact">
+    <h2 class="reveal">Есть задача?<br>Давайте <span class="grad">рендерить</span></h2>
+    <p class="reveal">Свободен для проектов с февраля 2027. Отвечаю в течение дня.</p>
+    <a class="btn btn-neon reveal" href="mailto:hi@volkov3d.pro">hi@volkov3d.pro</a>
+    <div class="socials reveal">
+      <a href="#">ArtStation</a>
+      <a href="#">Behance</a>
+      <a href="#">Telegram</a>
+      <a href="#">Instagram</a>
+    </div>
+  </section>
+
+  <footer>© 2026 max.volkov · 3D ARTIST · rendered with ♥ and 4090</footer>
+
+  <script>
+    // Scroll-reveal
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+      });
+    }, { threshold: .12 });
+    document.querySelectorAll('.reveal').forEach(function (el) { observer.observe(el); });
+
+    // Анимация скилл-баров при появлении
+    var barObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          var bar = e.target.querySelector('i');
+          if (bar) bar.style.width = bar.dataset.w + '%';
+          barObserver.unobserve(e.target);
+        }
+      });
+    }, { threshold: .4 });
+    document.querySelectorAll('.skill').forEach(function (el) { barObserver.observe(el); });
+  </script>
+</body>
+</html>
