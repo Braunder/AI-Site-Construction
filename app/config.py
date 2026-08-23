@@ -60,6 +60,13 @@ class Settings(BaseSettings):
             self.database_url = prefix + str(p)
         return self
 
+    @model_validator(mode="after")
+    def _normalize_postgres_url(self):
+        """Railway даёт postgres:// — SQLAlchemy 2.x требует postgresql://."""
+        if self.database_url.startswith("postgres://"):
+            self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
+        return self
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
