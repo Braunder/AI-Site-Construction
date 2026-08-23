@@ -104,3 +104,26 @@ RUN_LOCAL_E2E=1 pytest tests/test_e2e_local.py   # E2E против локаль
 Деплой на VPS/облако и выбор production-модели — по согласованию с заказчиком.
 Минимум для production: сменить `SECRET_KEY`, указать боевые `LLM_*`,
 запускать uvicorn за reverse-proxy (nginx) с HTTPS.
+
+### Деплой на Railway
+
+Проект готов к Railway из коробки: `Procfile`, `railway.json`, `runtime.txt`.
+
+1. **Создайте проект**: [railway.app](https://railway.app) → New Project → Deploy from GitHub repo.
+2. **Добавьте PostgreSQL**: New → Database → PostgreSQL (Railway сам выставит `DATABASE_URL`).
+3. **Variables** — обязательно задайте:
+   | Переменная | Значение |
+   |---|---|
+   | `SECRET_KEY` | длинная случайная строка (`python -c "import secrets; print(secrets.token_urlsafe(48))"`) |
+   | `SESSION_COOKIE_SECURE` | `true` |
+   | `PROXY_HEADERS` | `true` |
+   | `LLM_BASE_URL` / `LLM_API_KEY` / `LLM_MODEL` | боевые значения (или настройте провайдеров в админке после деплоя) |
+   | `CORS_ORIGINS` | `https://ваш-домен.up.railway.app` |
+4. **Deploy** — Railway соберёт через Nixpacks, применит миграции не нужно: таблицы создаются при старте, а `alembic upgrade head` можно выполнить один раз из Railway Shell.
+5. **Админ**: выполните в Railway Shell:
+   ```bash
+   python scripts/create_admin.py --username admin --password <надёжный пароль>
+   ```
+6. **Домен**: Settings → Networking → Generate Domain.
+
+Важно: файловая система Railway эфемерна — SQLite-файл и папки `uploads/`, `data/sites/`, `data/fonts/` сбрасываются при редеплое. Для продакшена используйте PostgreSQL (п.2) и внешнее хранилище для файлов (S3-совместимое), либо Volume (Settings → Volumes, монтировать в `/app/data`).
