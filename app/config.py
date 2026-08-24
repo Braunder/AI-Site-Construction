@@ -62,9 +62,16 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _normalize_postgres_url(self):
-        """Railway даёт postgres:// — SQLAlchemy 2.x требует postgresql://."""
-        if self.database_url.startswith("postgres://"):
-            self.database_url = self.database_url.replace("postgres://", "postgresql://", 1)
+        """Railway даёт postgres:// — приводим к postgresql+psycopg:// (драйвер psycopg 3).
+
+        Без явного dialect SQLAlchemy ищет psycopg2, которого нет в requirements.
+        """
+        url = self.database_url
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        if url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+psycopg://", 1)
+        self.database_url = url
         return self
 
     @property
