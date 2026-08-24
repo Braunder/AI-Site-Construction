@@ -2,9 +2,36 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.types import TypeDecorator
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+from app.config import get_settings
+
+
+class EncryptedSecret(TypeDecorator):
+    """Stores secrets encrypted at rest while exposing plaintext to application code."""
+
+    impl = String(500)
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if not value or value.startswith("enc:"):
+            return value or "local"
+        from cryptography.fernet import Fernet
+
+        token = Fernet(get_settings().llm_secrets_key_value.encode()).encrypt(value.encode()).decode()
+        return f"enc:{token}"
+
+    def process_result_value(self, value, dialect):
+        if not value or not value.startswith("enc:"):
+            return value or "local"
+        from cryptography.fernet import Fernet, InvalidToken
+
+        try:
+            return Fernet(get_settings().llm_secrets_key_value.encode()).decrypt(value[4:].encode()).decode()
+        except InvalidToken as exc:
+            raise ValueError("Не удалось расшифровать ключ LLM-провайдера: проверьте LLM_SECRETS_KEY") from exc
 
 
 def _utcnow() -> datetime:
@@ -46,7 +73,7 @@ class LLMProvider(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), unique=True, nullable=False)
     base_url: Mapped[str] = mapped_column(String(500), nullable=False)
-    api_key: Mapped[str] = mapped_column(String(500), default="local")
+    api_key: Mapped[str] = mapped_column(EncryptedSecret(), default="local")
     model: Mapped[str] = mapped_column(String(200), nullable=False)
     timeout: Mapped[float] = mapped_column(Float, default=600.0)
     max_retries: Mapped[int] = mapped_column(Integer, default=2)

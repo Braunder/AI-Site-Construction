@@ -129,14 +129,29 @@ async def create_project(
     if has_site_files and not plan.asset_images:
         raise HTTPException(403, "Загрузка изображений для сайта доступна со Стандартного тарифа")
 
-    image_path: str | None = None
-    if image is not None and image.filename:
-        try:
-            image_path = str(await save_upload(image))
-        except ImageValidationError as exc:
-            raise HTTPException(422, str(exc)) from exc
+    if has_site_files:
+        image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico"}
+        for f in files:
+            if f and f.filename and Path(f.filename).suffix.lower() not in image_exts:
+                raise HTTPException(
+                    422,
+                    f"Файл «{f.filename}»: можно загружать только изображения "
+                    "(JPG, PNG, GIF, WebP, SVG, ICO).",
+                )
 
-    _consume_or_429(current_user, db)
+    image_path: str | None = None
+    quota_consumed = False
+    try:
+        _consume_or_429(current_user, db)
+        quota_consumed = True
+
+        if image is not None and image.filename:
+            image_path = str(await save_upload(image))
+    except ImageValidationError as exc:
+        if quota_consumed:
+            from app.dependencies import refund_generation
+            refund_generation(current_user.id, db)
+        raise HTTPException(422, str(exc)) from exc
 
     title = " ".join(prompt.split())[:60] or "Без названия"
     project = Project(
@@ -152,29 +167,26 @@ async def create_project(
         is_multifile=bool(multifile),
         status="pending",
     )
-    db.add(project)
-    db.commit()
-    db.refresh(project)
+    try:
+        db.add(project)
+        db.flush()
 
-    # Изображения для сайта (standard+): сохраняем в папку проекта как vision-источник.
-    # В multifile они остаются и как ассеты (доступны сайту по относительному пути),
-    # вне multifile — используются только для vision-анализа содержимого моделью.
-    if has_site_files:
-        image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico"}
-        for f in files:
-            if not f or not f.filename:
-                continue
-            ext = Path(f.filename).suffix.lower()
-            if ext not in image_exts:
-                raise HTTPException(
-                    422,
-                    f"Файл «{f.filename}»: можно загружать только изображения "
-                    "(JPG, PNG, GIF, WebP, SVG, ICO).",
-                )
-            try:
+        # Сохраняем ассеты до коммита: ошибка не оставляет pending-проект.
+        if has_site_files:
+            for f in files:
+                if not f or not f.filename:
+                    continue
                 await sites_store.save_asset(current_user.id, project.id, f)
-            except sites_store.SiteFileError as exc:
-                raise HTTPException(422, f"Файл «{f.filename}»: {exc}") from exc
+        db.commit()
+        db.refresh(project)
+    except (sites_store.SiteFileError, OSError) as exc:
+        db.rollback()
+        if image_path:
+            Path(image_path).unlink(missing_ok=True)
+        sites_store.delete_project_dir(current_user.id, project.id)
+        from app.dependencies import refund_generation
+        refund_generation(current_user.id, db)
+        raise HTTPException(422, f"Ошибка сохранения файла: {exc}") from exc
 
     background_tasks.add_task(tasks.run_generation, project.id, current_user.id, False)
     return {"id": project.id, "status": project.status}
@@ -277,6 +289,10 @@ async def upload_asset(
     Файл доступен сайту по относительному пути — LLM получает манифест при генерации.
     """
     project = get_project_for_user(project_id, current_user, db)
+    if not get_plan(current_user).multifile:
+        raise HTTPException(403, "Загрузка файлов доступна со Стандартного тарифа")
+    if not project.is_multifile:
+        raise HTTPException(409, "Ассеты доступны только для многофайлового проекта")
     if not project.user_id:
         raise HTTPException(409, "Проект без владельца: загрузка файлов недоступна")
     try:

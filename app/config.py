@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     # LLM (OpenAI-совместимый API: llama.cpp, LM Studio, OpenAI и т.д.)
     llm_base_url: str = "http://127.0.0.1:8080/v1"
     llm_api_key: str = "local"
+    llm_secrets_key: str = ""
     llm_model: str = "Qwen3.5-9B.Q5_K_M.gguf"
     llm_timeout: float = 600.0
     llm_max_retries: int = 2
@@ -47,6 +48,16 @@ class Settings(BaseSettings):
                 "ИСПОЛЬЗУЕТСЯ ДЕФОЛТНЫЙ SECRET_KEY! Задайте SECRET_KEY в .env для production."
             )
         return self
+
+    @property
+    def llm_secrets_key_value(self) -> str:
+        """Ключ шифрования LLM-секретов; в production задаётся отдельным env-параметром."""
+        if self.llm_secrets_key:
+            return self.llm_secrets_key
+        import base64
+        import hashlib
+
+        return base64.urlsafe_b64encode(hashlib.sha256(self.secret_key.encode()).digest()).decode()
 
     @model_validator(mode="after")
     def _normalize_sqlite_path(self):
