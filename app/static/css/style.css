@@ -248,8 +248,23 @@ a { color: var(--brand-accent); }
 }
 .preview-wrap iframe { width: 100%; height: 75vh; border: 0; display: block; }
 
+/* ── Чат-редактор ── */
+.chat-card {
+  height: 100%;
+}
+.chat-body {
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  min-height: 0;
+  max-height: none;
+}
+.chat-footer {
+  flex-shrink: 0;
+}
+
 /* ── Чат ── */
-.chat-body { max-height: 60vh; overflow-y: auto; }
+.chat-body { overflow-y: auto; }
 .chat-entry { background: var(--bg-elev) !important; border: 1px solid var(--border); }
 .chat-entry + .chat-entry { margin-top: .5rem; }
 
