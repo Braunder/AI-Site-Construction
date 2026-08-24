@@ -4,7 +4,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.database import SessionLocal
-from app.models import Project, User
+from app.models import LLMProvider, Project, User
+from sqlalchemy import text
 from app.services import llm
 
 VALID_FORM = {
@@ -81,6 +82,47 @@ def test_bad_image_rejected(client):
     files = {"image": ("evil.exe", b"MZ\x90\x00", "image/png")}
     resp = client.post("/api/projects", data=VALID_FORM, files=files)
     assert resp.status_code == 422
+
+
+def test_invalid_asset_does_not_consume_quota_or_create_project(client, test_user):
+    prompt = "Проект с недопустимым ассетом"
+    before = test_user.generation_used
+    resp = client.post(
+        "/api/projects",
+        data={**VALID_FORM, "prompt": prompt, "multifile": "true"},
+        files=[("files", ("bad.exe", b"not allowed", "application/octet-stream"))],
+    )
+    assert resp.status_code == 422
+    with SessionLocal() as db:
+        user = db.get(User, test_user.id)
+        assert user.generation_used == before
+        assert db.query(Project).filter(Project.prompt == prompt).first() is None
+
+
+def test_free_user_cannot_upload_project_asset(client, test_user):
+    project_id = create_project(client, prompt="Многофайловый проект", multifile="true")
+    with SessionLocal() as db:
+        db.get(User, test_user.id).plan = "free"
+        db.commit()
+    resp = client.post(
+        f"/api/projects/{project_id}/assets",
+        files={"file": ("x.png", b"image", "image/png")},
+    )
+    assert resp.status_code == 403
+
+
+def test_llm_provider_key_is_encrypted_at_rest(db_session):
+    provider = LLMProvider(
+        name="encrypted-test",
+        base_url="http://localhost/v1",
+        api_key="secret-provider-key",
+        model="test-model",
+    )
+    db_session.add(provider)
+    db_session.commit()
+    stored = db_session.execute(text("SELECT api_key FROM llm_providers WHERE name = 'encrypted-test'")).scalar_one()
+    assert stored.startswith("enc:")
+    assert provider.api_key == "secret-provider-key"
 
 
 def test_chat_unknown_project(client):

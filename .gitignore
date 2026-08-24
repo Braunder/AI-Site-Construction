@@ -24,3 +24,4 @@ tests/test_vision_assets.py
 pytest.ini
 TODO.md
 BREAKER_REPORT.md
+tests/test_api.py
