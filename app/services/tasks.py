@@ -54,17 +54,18 @@ def _finish(db, project: Project, html: str, kind: str, instruction: str) -> Non
 
 
 def _assets_for(project: Project) -> list[dict] | None:
-    """Манифест ассетов проекта + библиотечные шрифты для LLM (многофайловый режим)."""
-    if not project.is_multifile or not project.user_id:
+    """Манифест файлов, доступных странице, + библиотечные шрифты."""
+    if not project.user_id:
         return None
     try:
         assets = sites.assets_manifest(project.user_id, project.id)
     except Exception:  # noqa: BLE001
         assets = []
     # Кастомные шрифты из общей библиотеки админа доступны всем проектам
-    for f in fonts.list_fonts():
-        family = Path(f["name"]).stem
-        assets.append({"path": f"fonts/{f['name']}", "kind": "font", "family": family})
+    if project.is_multifile:
+        for f in fonts.list_fonts():
+            family = Path(f["name"]).stem
+            assets.append({"path": f"fonts/{f['name']}", "kind": "font", "family": family})
     return assets or None
 
 
@@ -99,7 +100,10 @@ def _asset_images_for(project: Project) -> list[dict]:
                 data_url, _ = to_base64_data_url(path)
             except (OSError, ValueError):
                 continue
-            images.append({"path": asset["name"], "data_url": data_url})
+            images.append({
+                "path": f"/api/projects/{project.id}/files/{asset['name']}",
+                "data_url": data_url,
+            })
     except Exception:  # noqa: BLE001
         logger.warning("Не удалось собрать изображения проекта %s", project.id, exc_info=True)
     return images

@@ -171,8 +171,11 @@ def _check_project_limits(pdir: Path, incoming: int) -> None:
 
 
 def assets_manifest(user_id: str, project_id: str) -> list[dict]:
-    """Манифест для LLM: какие файлы доступны и как на них ссылаться (относительные пути)."""
+    """Манифест для LLM с URL, доступными из preview-iframe."""
     return [
-        {"path": a["name"], "kind": a["kind"]}
+        {
+            "path": f"/api/projects/{project_id}/files/{a['name']}",
+            "kind": a["kind"],
+        }
         for a in list_assets(user_id, project_id)
     ]
