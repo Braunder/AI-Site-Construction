@@ -39,9 +39,39 @@ async def save_upload(file: UploadFile) -> Path:
     return path
 
 
+_MIME_BY_EXT = {
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".webp": "image/webp",
+    ".gif": "image/gif",
+}
+
+
 def to_base64_data_url(path: Path) -> tuple[str, str]:
-    """Возвращает (data_url, base64) изображения для vision-запроса к LLM."""
+    """Возвращает (data_url, base64) изображения для vision-запроса к LLM.
+
+    WebP конвертируется в JPEG: некоторые сборки llama.cpp (mtmd) не декодируют
+    WebP и падают с 'failed to decode image bytes'.
+    """
     ext = path.suffix.lower()
-    mime = "image/png" if ext == ".png" else "image/jpeg"
+    if ext == ".webp":
+        path = _webp_to_jpeg(path)
+        ext = ".jpg"
+    mime = _MIME_BY_EXT.get(ext, "image/jpeg")
     b64 = base64.b64encode(path.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{b64}", b64
+
+
+def _webp_to_jpeg(path: Path) -> Path:
+    """Конвертирует WebP в JPEG рядом с оригиналом (кэшируется)."""
+    jpeg_path = path.with_suffix(".vision.jpg")
+    if jpeg_path.exists():
+        return jpeg_path
+    from PIL import Image
+
+    with Image.open(path) as img:
+        if img.mode != "RGB":
+            img = img.convert("RGB")
+        img.save(jpeg_path, "JPEG", quality=90)
+    return jpeg_path

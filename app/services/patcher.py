@@ -29,8 +29,38 @@ class PatchResult:
 _CSS_RULE_RE = re.compile(r"([^{}]+)\{([^{}]*)\}", re.S)
 
 
+def _selector_candidates(selector: str) -> list[str]:
+    """Варианты подстрок для поиска правила по селектору из инструмента.
+
+    Модель может прислать 'section#hero', 'div.card', '#hero', '.card' —
+    а в CSS селектор может быть записан как '#hero', '.card', 'section.hero' и т.п.
+    """
+    selector = selector.strip()
+    candidates = [selector]
+    m = re.match(r"^([a-zA-Z][a-zA-Z0-9]*)((?:[.#][\w-]+)+)$", selector)
+    if m:
+        tag, rest = m.group(1).lower(), m.group(2)
+        # 'section#hero' -> также ищем '#hero'
+        # 'div.card' -> также ищем '.card'
+        candidates.append(rest)
+        # 'section.card.big' -> также 'card' и 'big' по отдельности (последний шанс)
+        for part in re.findall(r"[.#]([\w-]+)", rest):
+            candidates.append(part)
+    return [c for c in candidates if c]
+
+
 def _find_rule_span(css: str, selector_substr: str) -> tuple[int, int] | None:
-    """Находит span (начало селектора, конец }) правила, чей селектор содержит подстроку."""
+    """Находит span (начало селектора, конец }) правила по селектору.
+
+    Пробует точные варианты из _selector_candidates, затем подстроку.
+    """
+    for candidate in _selector_candidates(selector_substr):
+        for m in _CSS_RULE_RE.finditer(css):
+            sel = m.group(1).lower()
+            # Точное совпадение части селектора: '#hero' в 'section, #hero' или '#hero'
+            if re.search(rf"(?:^|[\s,>+~])({re.escape(candidate)}(?![\w-]))", sel):
+                return m.start(), m.end()
+    # Fallback: подстрока (старое поведение)
     for m in _CSS_RULE_RE.finditer(css):
         if selector_substr.lower() in m.group(1).lower():
             return m.start(), m.end()

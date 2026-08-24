@@ -58,6 +58,27 @@ def _consume_or_429(user: User, db: Session) -> None:
         raise HTTPException(429, "Лимит генераций исчерпан")
 
 
+# Серверная защита от дублей: одинаковый запрос от того же пользователя в течение 10 сек = дубль
+import time as _time
+
+_recent_creates: dict[str, tuple[str, float]] = {}  # user_id -> (prompt_hash, ts)
+_DEDUPE_WINDOW = 10.0
+
+
+def _is_duplicate_create(user_id: str, prompt: str) -> bool:
+    key = f"{user_id}:{hash((prompt,))}"
+    now = _time.time()
+    # Чистим устаревшие
+    stale = [k for k, (_, ts) in _recent_creates.items() if now - ts > _DEDUPE_WINDOW]
+    for k in stale:
+        _recent_creates.pop(k, None)
+    prev = _recent_creates.get(user_id)
+    if prev and prev[0] == key and now - prev[1] < _DEDUPE_WINDOW:
+        return True
+    _recent_creates[user_id] = (key, now)
+    return False
+
+
 @router.post("", status_code=201)
 async def create_project(
     background_tasks: BackgroundTasks,
@@ -82,6 +103,18 @@ async def create_project(
     """
     _validate_form_fields(prompt, font, style, [color_primary, color_accent, color_bg])
 
+    # Серверная защита от дублей (двойной клик/Enter): тот же промпт от того же
+    # пользователя в течение 10 секунд — возвращаем существующий проект.
+    if _is_duplicate_create(current_user.id, prompt.strip()):
+        existing = db.scalars(
+            select(Project)
+            .where(Project.user_id == current_user.id, Project.prompt == prompt.strip())
+            .order_by(Project.created_at.desc())
+            .limit(1)
+        ).first()
+        if existing:
+            return {"id": existing.id, "status": existing.status, "duplicate": True}
+
     plan = get_plan(current_user)
 
     # Тарифные проверки
@@ -89,6 +122,12 @@ async def create_project(
         raise HTTPException(403, "Референсное изображение доступно со Стандартного тарифа")
     if multifile and not plan.multifile:
         raise HTTPException(403, "Многофайловый режим доступен со Стандартного тарифа")
+
+    # Изображения для сайта (standard+): модель видит их содержимое (vision)
+    # и размещает по смыслу. Файловая система не задействована — это не multifile.
+    has_site_files = bool(files) and any(f and f.filename for f in files)
+    if has_site_files and not plan.asset_images:
+        raise HTTPException(403, "Загрузка изображений для сайта доступна со Стандартного тарифа")
 
     image_path: str | None = None
     if image is not None and image.filename:
@@ -117,12 +156,11 @@ async def create_project(
     db.commit()
     db.refresh(project)
 
-    # Сохраняем ассеты в папку проекта (после создания, чтобы знать id).
-    # Через форму пользователи загружают ТОЛЬКО изображения;
-    # шрифты — из общей библиотеки админа, css/js — через менеджер файлов проекта.
-    if multifile and files:
+    # Изображения для сайта (standard+): сохраняем в папку проекта как vision-источник.
+    # В multifile они остаются и как ассеты (доступны сайту по относительному пути),
+    # вне multifile — используются только для vision-анализа содержимого моделью.
+    if has_site_files:
         image_exts = {".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".ico"}
-        saved: list[str] = []
         for f in files:
             if not f or not f.filename:
                 continue
@@ -130,12 +168,11 @@ async def create_project(
             if ext not in image_exts:
                 raise HTTPException(
                     422,
-                    f"Файл «{f.filename}»: через форму можно загружать только изображения. "
-                    "Шрифты доступны из библиотеки, CSS/JS — в менеджере файлов проекта.",
+                    f"Файл «{f.filename}»: можно загружать только изображения "
+                    "(JPG, PNG, GIF, WebP, SVG, ICO).",
                 )
             try:
-                path = await sites_store.save_asset(current_user.id, project.id, f)
-                saved.append(path.name)
+                await sites_store.save_asset(current_user.id, project.id, f)
             except sites_store.SiteFileError as exc:
                 raise HTTPException(422, f"Файл «{f.filename}»: {exc}") from exc
 

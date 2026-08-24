@@ -129,7 +129,7 @@
               {% endif %}
             </div>
 
-            <!-- Asset images (standard+, multifile) -->
+            <!-- Asset images (standard+): модель видит их и размещает сама -->
             {% if plan.asset_images %}
             <div class="mb-4">
               <label class="form-label fw-bold">Изображения для сайта (ИИ разместит сам)</label>
@@ -141,21 +141,6 @@
                 ИИ посмотрит содержимое картинок и поставит их в подходящие места
                 (галерея, hero, меню). 🔤 Кастомные шрифты подключает администратор —
                 они доступны автоматически.
-              </div>
-            </div>
-            {% endif %}
-
-            <!-- Multipage (premium beta) -->
-            {% if plan.multipage %}
-            <div class="mb-4">
-              <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" role="switch" id="multipage" name="multipage" value="true">
-                <label class="form-check-label fw-bold" for="multipage">
-                  📚 Многостраничный сайт <span class="badge bg-warning text-dark">Бета</span>
-                </label>
-              </div>
-              <div class="form-text">
-                Несколько HTML-страниц с общей навигацией (index, about, contacts...).
               </div>
             </div>
             {% endif %}

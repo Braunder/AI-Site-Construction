@@ -78,9 +78,14 @@
   }
 
   // --- Отправка + опрос статуса ---
+  var submitting = false; // защита от двойного срабатывания submit
   form.addEventListener('submit', async function (e) {
     e.preventDefault();
+    if (submitting) return; // повторный клик/Enter игнорируем
     if (!validate()) return;
+    submitting = true;
+    var submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) submitBtn.disabled = true;
     overlay.classList.remove('d-none');
     loadingText.textContent = 'Отправка задания…';
     try {
@@ -94,6 +99,8 @@
       loadingText.textContent = 'Генерация сайта… это может занять несколько минут';
       pollStatus(data.id);
     } catch (err) {
+      submitting = false; // позволяем повторить попытку после ошибки
+      if (submitBtn) submitBtn.disabled = false;
       overlay.classList.add('d-none');
       alert('Ошибка: ' + err.message);
     }

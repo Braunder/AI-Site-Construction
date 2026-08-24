@@ -72,8 +72,10 @@ def _asset_images_for(project: Project) -> list[dict]:
     """Загруженные изображения проекта как vision-контент (data_url + подпись).
 
     Ограничено настройками vision_assets / vision_assets_limit.
+    Работает для любого проекта с загруженными изображениями (standard+),
+    независимо от multifile: модель видит содержимое и размещает по смыслу.
     """
-    if not project.is_multifile or not project.user_id:
+    if not project.user_id:
         return []
     settings = get_settings()
     if not settings.vision_assets:
