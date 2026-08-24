@@ -13,7 +13,6 @@ alembic/versions/9c3d8e2f7a61_add_plan_to_users.py
 alembic/versions/608450cf5a6c_add_users_and_llm_config.py
 alembic/versions/b8f14e2c6a90_add_llm_providers.py
 alembic/versions/c4e9a1b7d203_remove_legacy_llm_config.py
-scripts/create_admin.py
 scripts/e2e_http.py
 scripts/e2e_niches.py
 tests/conftest.py
