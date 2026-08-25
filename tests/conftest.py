@@ -8,6 +8,11 @@ _tmp = tempfile.mkdtemp(prefix="aisc_test_")
 os.environ["DATABASE_URL"] = f"sqlite:///{_tmp}/test.db"
 os.environ["UPLOAD_DIR"] = f"{_tmp}/uploads"
 os.environ["LLM_BASE_URL"] = "http://127.0.0.1:1/v1"  # недоступный адрес — LLM в тестах мокается
+# Валидный Fernet-ключ (urlsafe base64, 32 байта) для шифрования ключей провайдеров в тестах
+os.environ.setdefault(
+    "LLM_SECRETS_KEY",
+    "GFuIc1gbJGyW0SSpNzLkR7fTJpzrkQVZqjT8wOaPv9E=",
+)
 
 import pytest
 from fastapi.testclient import TestClient

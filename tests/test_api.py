@@ -111,6 +111,53 @@ def test_free_user_cannot_upload_project_asset(client, test_user):
     assert resp.status_code == 403
 
 
+def test_svg_asset_served_with_csp_sandbox(client):
+    """Stored XSS через SVG: файл должен отдаваться с CSP sandbox и nosniff."""
+    project_id = create_project(client, prompt="SVG проект", multifile="true")
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg" onload="alert(1)"><script>alert(document.cookie)</script></svg>'
+    upload = client.post(
+        f"/api/projects/{project_id}/assets",
+        files={"file": ("evil.svg", svg, "image/svg+xml")},
+    )
+    assert upload.status_code == 201, upload.text
+    name = upload.json()["name"]
+    from app.services.tokens import file_token
+
+    resp = client.get(f"/api/projects/{project_id}/files/{name}?t={file_token(project_id, name)}")
+    assert resp.status_code == 200
+    assert resp.headers.get("content-security-policy") == "sandbox"
+    assert resp.headers.get("x-content-type-options") == "nosniff"
+
+
+def test_delete_missing_asset_returns_404(client):
+    project_id = create_project(client, prompt="Удаление ассета", multifile="true")
+    resp = client.delete(f"/api/projects/{project_id}/assets/nope.png")
+    assert resp.status_code == 404
+
+
+def test_expired_file_token_rejected(client):
+    """Просроченный токен файла не должен давать доступ без сессии."""
+    import time as _time
+
+    from app.services.tokens import file_token as ft
+
+    project_id = create_project(client, prompt="Токен TTL", multifile="true")
+    upload = client.post(
+        f"/api/projects/{project_id}/assets",
+        files={"file": ("pic.png", b"png", "image/png")},
+    )
+    name = upload.json()["name"]
+    old_ts = int(_time.time()) - 8 * 24 * 3600
+    stale_token = ft(project_id, name, issued_at=old_ts)
+    from app.main import app as fastapi_app
+
+    from fastapi.testclient import TestClient as TC
+
+    with TC(fastapi_app) as anon:
+        resp = anon.get(f"/api/projects/{project_id}/files/{name}?t={stale_token}")
+        assert resp.status_code == 401
+
+
 def test_llm_provider_key_is_encrypted_at_rest(db_session):
     provider = LLMProvider(
         name="encrypted-test",
@@ -173,6 +220,54 @@ def test_second_chat_conflicts(client):
         db.commit()
     assert client.post(f"/api/projects/{pid}/chat", json={"instruction": "x"}).status_code == 409
     assert client.post(f"/api/projects/{pid}/regenerate").status_code == 409
+
+
+def test_chat_409_does_not_consume_quota(client, test_user):
+    """Гонка: 409 занятого проекта не должен сжигать квоту (лок до списания)."""
+    pid = create_project(client)
+    with SessionLocal() as db:
+        used_before = db.get(User, test_user.id).generation_used
+        db.get(Project, pid).status = "processing"
+        db.commit()
+    resp = client.post(f"/api/projects/{pid}/chat", json={"instruction": "x"})
+    assert resp.status_code == 409
+    with SessionLocal() as db:
+        assert db.get(User, test_user.id).generation_used == used_before
+    resp = client.post(f"/api/projects/{pid}/regenerate")
+    assert resp.status_code == 409
+    with SessionLocal() as db:
+        assert db.get(User, test_user.id).generation_used == used_before
+
+
+def test_duplicate_create_alternating_prompts(client):
+    """Дедупликация не должна затирать разные промпты друг другом."""
+    r1 = client.post("/api/projects", data={**VALID_FORM, "prompt": "Промпт А"})
+    r2 = client.post("/api/projects", data={**VALID_FORM, "prompt": "Промпт Б"})
+    assert r1.status_code == 201 and r2.status_code == 201
+    assert r1.json()["id"] != r2.json()["id"]
+    r3 = client.post("/api/projects", data={**VALID_FORM, "prompt": "Промпт А"})
+    assert r3.json().get("duplicate") is True
+
+
+def test_windows_reserved_name_rejected():
+    from app.services.sites import SiteFileError, _safe_component
+
+    for name in ("CON", "aux", "com1", "lpt1"):
+        with pytest.raises(SiteFileError):
+            _safe_component(name)
+
+
+def test_css_import_data_url_blocked():
+    from app.services.codegen import find_forbidden
+
+    assert find_forbidden("<style>@import url(data:text/css,body{});</style>")
+
+
+def test_css_expression_in_url_blocked():
+    from app.services.codegen import find_forbidden
+
+    problems = find_forbidden('<style>a{background:url(expression(alert(1)))}</style>')
+    assert any("CSS url" in p for p in problems), problems
 
 
 def test_font_rejects_newline(client):

@@ -55,6 +55,13 @@ class Settings(BaseSettings):
         """Ключ шифрования LLM-секретов; в production задаётся отдельным env-параметром."""
         if self.llm_secrets_key:
             return self.llm_secrets_key
+        if self.secret_key == "change-me-in-production":
+            # Дефолтный секрет деривирует ключ шифрования API-ключей — компрометация БД
+            # означает компрометацию всех ключей провайдеров. Fail-fast вместо warning.
+            raise RuntimeError(
+                "LLM_SECRETS_KEY не задан, а SECRET_KEY оставлен дефолтным. "
+                "Задайте LLM_SECRETS_KEY (Fernet-ключ) или собственный SECRET_KEY."
+            )
         import base64
         import hashlib
 

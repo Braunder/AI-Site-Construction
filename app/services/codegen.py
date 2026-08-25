@@ -84,6 +84,18 @@ def _is_allowed_host(host: str) -> bool:
     return any(host == h or host.endswith("." + h) for h in ALLOWED_EXTERNAL_HOSTS)
 
 
+# Inline event handlers: on*="..." / on*='...' / on*=value без кавычек.
+# \x00-\x1f между 'on' и именем события отсекает обходы вида o\tnerror.
+_EVENT_HANDLER_RE = re.compile(
+    r"<[^>]*?(?<![\w-])o[\s\x00-\x1f]*n[\s\x00-\x1f]*[a-z]+[\s\x00-\x1f]*=", re.I
+)
+
+# CSS url(javascript:...) / url(data:text/html;...) — схема внутри url() не проверялась.
+_CSS_DANGEROUS_URL_RE = re.compile(
+    r"url\(\s*['\"]?\s*(?:j[\s\x00-\x1f]*a[\s\x00-\x1f]*v[\s\x00-\x1f]*a[\s\x00-\x1f]*s[\s\x00-\x1f]*c[\s\x00-\x1f]*r[\s\x00-\x1f]*i[\s\x00-\x1f]*p[\s\x00-\x1f]*t\s*:|d[\s\x00-\x1f]*a[\s\x00-\x1f]*t[\s\x00-\x1f]*a\s*:|expression\s*\()",
+    re.I,
+)
+
 FORBIDDEN_PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"<\s*(iframe|object|embed|applet|frame|portal)\b", re.I), "запрещённый тег (iframe/object/embed/applet/frame/portal)"),
     (re.compile(r"<\s*meta[^>]+http-equiv\s*=\s*['\"]?refresh", re.I), "meta refresh"),
@@ -208,6 +220,11 @@ def find_forbidden(html_text: str) -> list[str]:
         if pattern.search(decoded):
             problems.append(label)
     # Дополнительная проверка схем с whitespace внутри (java\tscript:, jav\nascript:)
+    # Inline event handlers (onerror=, onload= и т.п.) — с учётом whitespace-обходов.
+    if _EVENT_HANDLER_RE.search(decoded) or _EVENT_HANDLER_RE.search(_SCHEME_STRIP_RE.sub("", decoded)):
+        problems.append("inline event handler (on*)")
+    if _CSS_DANGEROUS_URL_RE.search(decoded):
+        problems.append("CSS url(javascript:/data:text/html)")
     stripped = _SCHEME_STRIP_RE.sub("", decoded)
     if _JAVASCRIPT_SCHEME_RE.search(stripped):
         problems.append("javascript:-ссылка")

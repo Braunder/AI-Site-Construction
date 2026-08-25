@@ -57,9 +57,20 @@ def project_dir(user_id: str, project_id: str) -> Path:
     return p
 
 
+# Windows reserved device names — mkdir на Windows упадёт с OSError
+_WIN_RESERVED = {
+    "con", "prn", "aux", "nul",
+    *(f"com{i}" for i in range(1, 10)),
+    *(f"lpt{i}" for i in range(1, 10)),
+}
+
+
 def _safe_component(value: str) -> str:
     if not value or not _SAFE_NAME_RE.match(value):
         raise SiteFileError("Недопустимое имя пути")
+    stem = value.split(".")[0].strip().lower()
+    if stem in _WIN_RESERVED:
+        raise SiteFileError("Недопустимое имя пути (зарезервированное имя Windows)")
     return value
 
 
@@ -181,3 +192,12 @@ def assets_manifest(user_id: str, project_id: str) -> list[dict]:
         }
         for a in list_assets(user_id, project_id)
     ]
+
+
+def remove_project_dir_if_empty(user_id: str, project_id: str) -> None:
+    """Удаляет папку проекта, только если она пуста (не создаёт её заново)."""
+    pdir = settings.sites_path / _safe_component(user_id) / _safe_component(project_id)
+    try:
+        pdir.rmdir()  # rmdir не создаёт папку и падает, если она не пуста
+    except OSError:
+        pass

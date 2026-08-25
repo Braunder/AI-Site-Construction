@@ -61,21 +61,27 @@ def _consume_or_429(user: User, db: Session) -> None:
 # Серверная защита от дублей: одинаковый запрос от того же пользователя в течение 10 сек = дубль
 import time as _time
 
-_recent_creates: dict[str, tuple[str, float]] = {}  # user_id -> (prompt_hash, ts)
+_recent_creates: dict[str, tuple[dict[str, float], float]] = {}  # user_id -> ({prompt_hash: ts}, ts)
 _DEDUPE_WINDOW = 10.0
 
 
 def _is_duplicate_create(user_id: str, prompt: str) -> bool:
-    key = f"{user_id}:{hash((prompt,))}"
+    import hashlib as _hashlib
+
+    prompt_hash = _hashlib.sha256(prompt.encode()).hexdigest()
     now = _time.time()
-    # Чистим устаревшие
-    stale = [k for k, (_, ts) in _recent_creates.items() if now - ts > _DEDUPE_WINDOW]
+    entry = _recent_creates.get(user_id, ({}, 0.0))
+    prompts, _ = entry
+    prompts = {h: t for h, t in prompts.items() if now - t < _DEDUPE_WINDOW}
+    stale = [k for k, (_, ts) in _recent_creates.items() if now - ts > _DEDUPE_WINDOW * 2]
     for k in stale:
         _recent_creates.pop(k, None)
-    prev = _recent_creates.get(user_id)
-    if prev and prev[0] == key and now - prev[1] < _DEDUPE_WINDOW:
+    if prompts.get(prompt_hash) and now - prompts[prompt_hash] < _DEDUPE_WINDOW:
+        prompts[prompt_hash] = now
+        _recent_creates[user_id] = (prompts, now)
         return True
-    _recent_creates[user_id] = (key, now)
+    prompts[prompt_hash] = now
+    _recent_creates[user_id] = (prompts, now)
     return False
 
 
@@ -183,7 +189,8 @@ async def create_project(
         db.rollback()
         if image_path:
             Path(image_path).unlink(missing_ok=True)
-        sites_store.delete_project_dir(current_user.id, project.id)
+        # rmdir без mkdir: не создаём заново папку несуществующего проекта
+        sites_store.remove_project_dir_if_empty(current_user.id, project.id)
         from app.dependencies import refund_generation
         refund_generation(current_user.id, db)
         raise HTTPException(422, f"Ошибка сохранения файла: {exc}") from exc
@@ -225,8 +232,9 @@ def chat_edit(
     project = get_project_for_user(project_id, current_user, db)
     if not project.current_html:
         raise HTTPException(409, "Сначала дождитесь первичной генерации")
-    _consume_or_429(current_user, db)
+    # Сначала лок: иначе 409 занятого проекта сгорал после списания квоты.
     _lock_project(project, db)
+    _consume_or_429(current_user, db)
     background_tasks.add_task(tasks.run_edit, project.id, current_user.id, body.instruction.strip())
     return {"status": "processing"}
 
@@ -241,8 +249,9 @@ def regenerate(
     project = get_project_for_user(project_id, current_user, db)
     if project.status == "pending":
         raise HTTPException(409, "Сначала дождитесь первичной генерации")
-    _consume_or_429(current_user, db)
+    # Сначала лок: иначе 409 занятого проекта сгорал после списания квоты.
     _lock_project(project, db)
+    _consume_or_429(current_user, db)
     background_tasks.add_task(tasks.run_generation, project.id, current_user.id, True)
     return {"status": "processing"}
 
@@ -361,7 +370,13 @@ def get_asset(
     if not str(target).startswith(str(pdir.resolve())) or not target.is_file():
         raise HTTPException(404, "Файл не найден")
     media_type = sites_store.MIME_BY_EXT.get(target.suffix.lower(), "application/octet-stream")
-    return FileResponse(target, media_type=media_type)
+    response = FileResponse(target, media_type=media_type)
+    # SVG/HTML исполняются браузером в origin приложения — изолируем их CSP-sandbox,
+    # чтобы скрипты внутри файла не получили доступ к сессии/cookies.
+    if target.suffix.lower() in {".svg", ".html", ".htm"}:
+        response.headers["Content-Security-Policy"] = "sandbox"
+        response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 @router.delete("/{project_id}/assets/{filename}", status_code=204)
@@ -379,8 +394,13 @@ def delete_asset(
     except sites_store.SiteFileError as exc:
         raise HTTPException(422, str(exc)) from exc
     target = (pdir / Path(filename).name).resolve()
-    if str(target).startswith(str(pdir.resolve())) and target.is_file() and target.name != "index.html":
-        target.unlink()
+    if not (
+        str(target).startswith(str(pdir.resolve()))
+        and target.is_file()
+        and target.name != "index.html"
+    ):
+        raise HTTPException(404, "Файл не найден")
+    target.unlink()
     return Response(status_code=204)
 
 

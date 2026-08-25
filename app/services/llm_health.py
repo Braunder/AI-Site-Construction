@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 # Кэш статуса: {"online": bool, "provider": str|None, "models": int, "checked": int, "ts": float}
 _status: dict = {"online": False, "provider": None, "models": 0, "checked": 0, "ts": 0.0}
-CHECK_INTERVAL_SECONDS = 1 * 60  # опрос раз в 5 минут
+CHECK_INTERVAL_SECONDS = 5 * 60  # опрос раз в 5 минут
 
 
 def get_cached_status() -> dict:

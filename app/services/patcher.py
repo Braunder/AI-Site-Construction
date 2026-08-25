@@ -152,18 +152,33 @@ def op_delete_element(html: str, args: dict) -> str:
     if tag_match:
         tag, el_id = tag_match.group(1).lower(), selector.split("#", 1)[1]
         open_re = re.compile(
-            rf"<{tag}\b[^>]*\bid\s*=\s*[\"']{re.escape(el_id)}[\"'][^>]*>.*?</{tag}\s*>",
-            re.S | re.I,
+            rf"<{tag}\b[^>]*\bid\s*=\s*[\"']{re.escape(el_id)}[\"'][^>]*>",
+            re.I,
         )
     else:
         tag = selector.lower()
-        open_re = re.compile(rf"<{tag}\b[^>]*>.*?</{tag}\s*>", re.S | re.I)
+        open_re = re.compile(rf"<{tag}\b[^>]*>", re.I)
 
     matches = list(open_re.finditer(html))
     if len(matches) != 1:
         raise PatchError(f"delete_element: найдено {len(matches)} совпадений для '{selector}', нужен 1")
     m = matches[0]
-    return html[: m.start()] + html[m.end() :]
+
+    # Ищем закрывающий тег с учётом вложенности одноимённых тегов:
+    # наивный .*?</tag> обрывался на первом </div> и портил документ.
+    close_re = re.compile(rf"</?{tag}\b[^>]*>", re.I)
+    depth = 1
+    pos = m.end()
+    while depth > 0:
+        nm = close_re.search(html, pos)
+        if nm is None:
+            raise PatchError(f"delete_element: закрывающий </{tag}> не найден")
+        if nm.group(0).lower().startswith(f"</"):
+            depth -= 1
+        else:
+            depth += 1
+        pos = nm.end()
+    return html[: m.start()] + html[pos :]
 
 
 def op_rewrite_full(html: str, args: dict) -> str:

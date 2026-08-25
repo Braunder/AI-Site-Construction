@@ -22,9 +22,14 @@ _LOGIN_WINDOW_SECONDS = 15 * 60
 
 
 def _client_ip(request: Request) -> str:
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
+    # X-Forwarded-For доверяем только за явным proxy_headers=True (production за прокси);
+    # иначе спуфинг XFF позволяет обойти rate-limit ротацией заголовка.
+    from app.config import get_settings
+
+    if get_settings().proxy_headers:
+        forwarded = request.headers.get("x-forwarded-for")
+        if forwarded:
+            return forwarded.split(",")[0].strip()
     return request.client.host if request.client else "unknown"
 
 

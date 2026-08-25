@@ -118,6 +118,41 @@ def test_forbidden_entities_in_javascript_and_data():
     assert find_forbidden('<a href=javascript&colon;alert(1)>x</a>')
 
 
+def test_forbidden_inline_event_handlers():
+    """XSS: inline on*-обработчики должны детектиться."""
+    cases = [
+        '<img src=x onerror="alert(1)">',
+        "<svg onload=alert(1)></svg>",
+        '<body onmouseover="steal()">',
+        '<div onclick=steal()>x</div>',
+        '<img src=x o\tnerror=alert(1)>',  # whitespace-обход имени события
+    ]
+    for case in cases:
+        problems = find_forbidden(case)
+        assert any("event handler" in p for p in problems), (case, problems)
+
+
+def test_allowed_handlers_not_flagged():
+    """Слова, содержащие 'on' не как атрибут-событие, не должны ловиться."""
+    ok = (
+        '<a href="https://fonts.googleapis.com">конфигурация</a>'
+        + VALID_HTML
+    )
+    assert find_forbidden(ok) == []
+
+
+def test_forbidden_css_url_javascript_scheme():
+    """CSS url(javascript:) и url(data:text/html) должны детектиться."""
+    cases = [
+        "<style>a{background:url(javascript:alert(1))}</style>",
+        '<div style="background:url(&quot;javascript:alert(1)&quot;)">x</div>',
+        "<style>body{background:url('data:text/html,<script>')}</style>",
+    ]
+    for case in cases:
+        problems = find_forbidden(case)
+        assert any("CSS url" in p for p in problems), (case, problems)
+
+
 def test_forbidden_external_media():
     assert find_forbidden('<img src="https://evil.com/x.jpg">')
     assert find_forbidden('<audio src="https://evil.com/x.mp3"></audio>')

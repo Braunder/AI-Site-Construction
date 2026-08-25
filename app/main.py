@@ -64,9 +64,13 @@ async def lifespan(app: FastAPI):
                     Project.error_message == "Генерация прервана перезапуском сервера"
                 )
             ).all()
-            for uid in {u for u in owner_ids if u}:
-                refund_generation(uid, db)
-            logger.info("Возвращено квот: %d (пользователей: %d)", len(owner_ids), len(set(owner_ids)))
+            # По одной квоте за КАЖДЫЙ прерванный проект, а не один refund на пользователя.
+            from collections import Counter
+
+            for uid, count in Counter(u for u in owner_ids if u).items():
+                for _ in range(count):
+                    refund_generation(uid, db)
+            logger.info("Возвращено квот: %d (пользователей: %d)", sum(Counter(u for u in owner_ids if u).values()), len(set(owner_ids)))
     logger.info("Приложение запущено. LLM: %s (%s)", settings.llm_model, settings.llm_base_url)
     # Фоновый health-check LLM раз в 5 минут (без расхода токенов)
     from app.services.llm_health import start_health_task
