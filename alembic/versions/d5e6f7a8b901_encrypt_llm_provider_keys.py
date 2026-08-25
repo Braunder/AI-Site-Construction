@@ -21,8 +21,16 @@ depends_on = None
 
 def _fernet() -> Fernet:
     configured = os.getenv("LLM_SECRETS_KEY", "")
-    secret = configured or os.getenv("SECRET_KEY", "change-me-in-production")
-    key = configured or base64.urlsafe_b64encode(hashlib.sha256(secret.encode()).digest()).decode()
+    if configured:
+        return Fernet(configured.encode())
+    secret = os.getenv("SECRET_KEY", "")
+    if not secret or secret == "change-me-in-production":
+        # Шифрование под публично известный дефолт = хранение в открытом виде.
+        raise RuntimeError(
+            "Миграция шифрования ключей требует LLM_SECRETS_KEY или реальный SECRET_KEY. "
+            "Задайте переменную окружения и повторите alembic upgrade head."
+        )
+    key = base64.urlsafe_b64encode(hashlib.sha256(secret.encode()).digest()).decode()
     return Fernet(key.encode())
 
 

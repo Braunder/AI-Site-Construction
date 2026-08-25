@@ -8,6 +8,8 @@ _tmp = tempfile.mkdtemp(prefix="aisc_test_")
 os.environ["DATABASE_URL"] = f"sqlite:///{_tmp}/test.db"
 os.environ["UPLOAD_DIR"] = f"{_tmp}/uploads"
 os.environ["LLM_BASE_URL"] = "http://127.0.0.1:1/v1"  # недоступный адрес — LLM в тестах мокается
+# Fail-fast на дефолтный SECRET_KEY: тестам нужен явный непубличный секрет
+os.environ.setdefault("SECRET_KEY", "test-secret-key-not-for-production")
 # Валидный Fernet-ключ (urlsafe base64, 32 байта) для шифрования ключей провайдеров в тестах
 os.environ.setdefault(
     "LLM_SECRETS_KEY",

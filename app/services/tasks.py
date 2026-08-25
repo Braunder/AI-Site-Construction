@@ -116,7 +116,9 @@ def _asset_images_for(project: Project) -> list[dict]:
 def _fail(project: Project, exc: Exception) -> None:
     logger.exception("Задача для проекта %s завершилась ошибкой", project.id)
     project.status = "error"
-    project.error_message = str(exc)[:1000]
+    # Пользователю — общее сообщение без тела ответа провайдера (base URL, квоты,
+    # фрагменты аккаунта); детали остаются только в логе сервера.
+    project.error_message = "Генерация не удалась: LLM недоступна или вернула некорректный ответ. Попробуйте позже."
 
 
 async def run_generation(project_id: str, user_id: str, regenerate: bool = False) -> None:

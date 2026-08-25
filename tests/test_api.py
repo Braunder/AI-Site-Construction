@@ -158,6 +158,51 @@ def test_expired_file_token_rejected(client):
         assert resp.status_code == 401
 
 
+def test_llm_failure_masks_upstream_details(client, monkeypatch):
+    """Тело ответа провайдера не должно попадать в error_message пользователю."""
+    async def broken(params, image_data_url=None, seed=None, assets=None, asset_images=None, animations=True):
+        raise llm.LLMError('LLM HTTP 500: {"error":"internal 10.0.0.5 quota exceeded for sk-abc123"}')
+
+    monkeypatch.setattr(llm, "generate_site", broken)
+    pid = create_project(client)
+    status = client.get(f"/api/projects/{pid}/status").json()
+    assert status["status"] == "error"
+    msg = status["error"] or ""
+    assert "10.0.0.5" not in msg and "sk-abc123" not in msg and "quota" not in msg
+
+
+def test_js_asset_served_with_csp_sandbox(client):
+    """JS-ассеты отдаются с CSP sandbox + nosniff (как svg/html)."""
+    project_id = create_project(client, prompt="JS проект", multifile="true")
+    upload = client.post(
+        f"/api/projects/{project_id}/assets",
+        files={"file": ("evil.js", b"fetch('/api/projects')", "application/javascript")},
+    )
+    name = upload.json()["name"]
+    from app.services.tokens import file_token
+
+    resp = client.get(f"/api/projects/{project_id}/files/{name}?t={file_token(project_id, name)}")
+    assert resp.status_code == 200
+    assert resp.headers.get("content-security-policy") == "sandbox"
+    assert resp.headers.get("x-content-type-options") == "nosniff"
+
+
+def test_preview_has_nosniff(client):
+    pid = create_project(client)
+    resp = client.get(f"/projects/{pid}/preview")
+    assert resp.headers.get("x-content-type-options") == "nosniff"
+
+
+def test_default_secret_key_fails_fast():
+    """Дефолтный SECRET_KEY должен ронять конфигурацию (подделка сессии = админ)."""
+    import pytest as _pytest
+
+    from app.config import Settings
+
+    with _pytest.raises(RuntimeError, match="SECRET_KEY"):
+        Settings(secret_key="change-me-in-production", _env_file=None)
+
+
 def test_llm_provider_key_is_encrypted_at_rest(db_session):
     provider = LLMProvider(
         name="encrypted-test",

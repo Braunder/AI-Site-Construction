@@ -166,7 +166,10 @@ def project_preview(project_id: str, request: Request, db: Session = Depends(get
         return HTMLResponse("<p style='font-family:sans-serif'>Сайт ещё не сгенерирован.</p>", status_code=200)
     return HTMLResponse(
         content=project.current_html,
-        headers={"Content-Security-Policy": "sandbox allow-scripts"},
+        headers={
+            "Content-Security-Policy": "sandbox allow-scripts",
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 

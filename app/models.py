@@ -16,8 +16,12 @@ class EncryptedSecret(TypeDecorator):
     cache_ok = True
 
     def process_bind_param(self, value, dialect):
+        if value is None:
+            return "local"
+        if not isinstance(value, str):
+            value = str(value)
         if not value or value.startswith("enc:"):
-            return value or "local"
+            return value
         from cryptography.fernet import Fernet
 
         token = Fernet(get_settings().llm_secrets_key_value.encode()).encrypt(value.encode()).decode()

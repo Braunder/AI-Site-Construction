@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 _login_attempts: dict[str, list[float]] = defaultdict(list)
 _LOGIN_MAX_ATTEMPTS = 10
 _LOGIN_WINDOW_SECONDS = 15 * 60
+_MAX_TRACKED_IPS = 10_000  # защита от memory-DoS через спуфинг XFF
 
 
 def _client_ip(request: Request) -> str:
@@ -40,6 +41,11 @@ def check_login_rate(request: Request) -> None:
     attempts = [t for t in _login_attempts[ip] if now - t < _LOGIN_WINDOW_SECONDS]
     attempts.append(now)
     _login_attempts[ip] = attempts
+    # Ограничиваем число отслеживаемых IP: самые старые записи вытесняются.
+    if len(_login_attempts) > _MAX_TRACKED_IPS:
+        oldest = sorted(_login_attempts.items(), key=lambda kv: kv[1][-1])[: len(_login_attempts) // 2]
+        for stale_ip, _ in oldest:
+            _login_attempts.pop(stale_ip, None)
     if len(attempts) > _LOGIN_MAX_ATTEMPTS:
         raise HTTPException(429, "Слишком много попыток входа. Попробуйте позже.")
 

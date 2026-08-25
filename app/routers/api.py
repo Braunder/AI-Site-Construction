@@ -365,15 +365,15 @@ def get_asset(
         pdir = sites_store.project_dir(owner_id, project_id)
     except sites_store.SiteFileError as exc:
         raise HTTPException(422, str(exc)) from exc
-    # Защита от path traversal
+    # Защита от path traversal: .name отсекает пути, is_relative_to — строгая проверка
     target = (pdir / Path(filename).name).resolve()
-    if not str(target).startswith(str(pdir.resolve())) or not target.is_file():
+    if not target.is_relative_to(pdir.resolve()) or not target.is_file():
         raise HTTPException(404, "Файл не найден")
     media_type = sites_store.MIME_BY_EXT.get(target.suffix.lower(), "application/octet-stream")
     response = FileResponse(target, media_type=media_type)
-    # SVG/HTML исполняются браузером в origin приложения — изолируем их CSP-sandbox,
-    # чтобы скрипты внутри файла не получили доступ к сессии/cookies.
-    if target.suffix.lower() in {".svg", ".html", ".htm"}:
+    # SVG/HTML/JS исполняются браузером; изолируем их CSP-sandbox, чтобы скрипты
+    # внутри файла не получили доступ к сессии/cookies основного приложения.
+    if target.suffix.lower() in {".svg", ".html", ".htm", ".js"}:
         response.headers["Content-Security-Policy"] = "sandbox"
         response.headers["X-Content-Type-Options"] = "nosniff"
     return response
@@ -395,7 +395,7 @@ def delete_asset(
         raise HTTPException(422, str(exc)) from exc
     target = (pdir / Path(filename).name).resolve()
     if not (
-        str(target).startswith(str(pdir.resolve()))
+        target.is_relative_to(pdir.resolve())
         and target.is_file()
         and target.name != "index.html"
     ):

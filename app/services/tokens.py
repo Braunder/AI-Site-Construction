@@ -14,7 +14,7 @@ import time
 
 from app.config import get_settings
 
-TOKEN_TTL_SECONDS = 7 * 24 * 3600
+TOKEN_TTL_SECONDS = 60 * 60  # 1 час: утёкшая ссылка быстро теряет силу
 
 
 def file_token(project_id: str, filename: str, issued_at: int | None = None) -> str:

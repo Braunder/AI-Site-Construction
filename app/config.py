@@ -41,12 +41,15 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def _warn_on_default_secret(self):
-        """Небезопасный дефолтный secret_key: предупреждение при старте (не падаем, чтобы не ломать dev)."""
-        if self.secret_key == "change-me-in-production":
-            import logging
+        """Дефолтный secret_key подписывает сессии и file-токены — подделка даёт админа.
 
-            logging.getLogger(__name__).warning(
-                "ИСПОЛЬЗУЕТСЯ ДЕФОЛТНЫЙ SECRET_KEY! Задайте SECRET_KEY в .env для production."
+        Fail-fast: приложение не стартует без явного SECRET_KEY/SECRET_KEY_FILE.
+        Для локальной разработки задайте любое непустое значение в .env.
+        """
+        if self.secret_key == "change-me-in-production":
+            raise RuntimeError(
+                "SECRET_KEY оставлен дефолтным — это позволяет подделать сессию и получить админа. "
+                "Задайте собственный SECRET_KEY в .env (для разработки — любая случайная строка)."
             )
         return self
 
