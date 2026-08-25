@@ -171,10 +171,12 @@ def _check_project_limits(pdir: Path, incoming: int) -> None:
 
 
 def assets_manifest(user_id: str, project_id: str) -> list[dict]:
-    """Манифест для LLM с URL, доступными из preview-iframe."""
+    """Манифест для LLM с подписанными URL, доступными из preview-iframe."""
+    from app.services.tokens import file_token
+
     return [
         {
-            "path": f"/api/projects/{project_id}/files/{a['name']}",
+            "path": f"/api/projects/{project_id}/files/{a['name']}?t={file_token(project_id, a['name'])}",
             "kind": a["kind"],
         }
         for a in list_assets(user_id, project_id)

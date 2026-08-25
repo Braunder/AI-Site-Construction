@@ -3,13 +3,13 @@ import unicodedata
 from pathlib import Path
 from urllib.parse import quote
 
-from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response, FileResponse
 from pydantic import BaseModel, Field, field_validator
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.dependencies import consume_generation, get_project_for_user, require_user
 from app.models import Project, User
 from app.services.images import ImageValidationError, save_upload
@@ -319,16 +319,22 @@ def list_assets(
 def get_asset(
     project_id: str,
     filename: str,
-    current_user: User = Depends(require_user),
+    request: Request,
+    t: str = "",
     db: Session = Depends(get_db),
 ):
     """Отдаёт файл проекта (для iframe-превью и скачивания).
 
-    Путь fonts/<name> отдаёт шрифт из общей библиотеки админа.
+    Доступ: подписанный токен ?t=... (sandbox-iframe не передаёт куку)
+    либо авторизованный владелец/админ.
     """
-    project = get_project_for_user(project_id, current_user, db)
-    if not project.user_id:
-        raise HTTPException(404, "Файл не найден")
+    from app.services.tokens import verify_file_token
+
+    if not verify_file_token(project_id, filename, t):
+        current_user = require_user(request)  # 401 без сессии
+        project = get_project_for_user(project_id, current_user, db)
+        if not project.user_id:
+            raise HTTPException(404, "Файл не найден")
 
     # Шрифты из общей библиотеки: fonts/<name>
     if filename.lower().startswith("fonts/"):
@@ -340,7 +346,14 @@ def get_asset(
         return FileResponse(target, media_type=media_type)
 
     try:
-        pdir = sites_store.project_dir(project.user_id, project.id)
+        with SessionLocal() as sdb:
+            owner_id = sdb.scalar(select(Project.user_id).where(Project.id == project_id))
+    except Exception:  # noqa: BLE001
+        owner_id = None
+    if not owner_id:
+        raise HTTPException(404, "Файл не найден")
+    try:
+        pdir = sites_store.project_dir(owner_id, project_id)
     except sites_store.SiteFileError as exc:
         raise HTTPException(422, str(exc)) from exc
     # Защита от path traversal

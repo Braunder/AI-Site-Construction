@@ -11,6 +11,7 @@ from app.services import llm, sites
 from app.services import fonts
 from app.services.images import to_base64_data_url
 from app.services.plans import get_plan
+from app.services.tokens import file_token
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +102,10 @@ def _asset_images_for(project: Project) -> list[dict]:
             except (OSError, ValueError):
                 continue
             images.append({
-                "path": f"/api/projects/{project.id}/files/{asset['name']}",
+                "path": (
+                    f"/api/projects/{project.id}/files/{asset['name']}"
+                    f"?t={file_token(project.id, asset['name'])}"
+                ),
                 "data_url": data_url,
             })
     except Exception:  # noqa: BLE001
