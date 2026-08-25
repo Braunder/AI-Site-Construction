@@ -51,27 +51,44 @@ _MIME_BY_EXT = {
 def to_base64_data_url(path: Path) -> tuple[str, str]:
     """Возвращает (data_url, base64) изображения для vision-запроса к LLM.
 
-    WebP конвертируется в JPEG: некоторые сборки llama.cpp (mtmd) не декодируют
-    WebP и падают с 'failed to decode image bytes'.
+    Готовит уменьшенную JPEG-копию (кэшируется рядом с оригиналом):
+    - длинная сторона <= settings.vision_max_px (по умолчанию 1024);
+    - JPEG quality 80.
+    Токены vision-моделей зависят от разрешения, а не от качества сжатия:
+    1024px достаточно для анализа содержимого, payload падает в разы.
+    WebP/GIF конвертируются в JPEG (некоторые сборки llama.cpp не декодируют WebP).
     """
-    ext = path.suffix.lower()
-    if ext == ".webp":
-        path = _webp_to_jpeg(path)
-        ext = ".jpg"
+    path = _vision_copy(path)
+    ext = ".jpg"
     mime = _MIME_BY_EXT.get(ext, "image/jpeg")
     b64 = base64.b64encode(path.read_bytes()).decode("ascii")
     return f"data:{mime};base64,{b64}", b64
 
 
-def _webp_to_jpeg(path: Path) -> Path:
-    """Конвертирует WebP в JPEG рядом с оригиналом (кэшируется)."""
+def _vision_copy(path: Path) -> Path:
+    """Уменьшенная JPEG-копия для vision (кэшируется как *.vision.jpg).
+
+    При ошибке обработки возвращает оригинал — vision не должен ломать генерацию.
+    """
     jpeg_path = path.with_suffix(".vision.jpg")
     if jpeg_path.exists():
         return jpeg_path
-    from PIL import Image
+    try:
+        from PIL import Image
 
-    with Image.open(path) as img:
-        if img.mode != "RGB":
-            img = img.convert("RGB")
-        img.save(jpeg_path, "JPEG", quality=90)
-    return jpeg_path
+        max_px = get_settings().vision_max_px
+        with Image.open(path) as img:
+            # GIF с анимацией: берём первый кадр
+            if getattr(img, "is_animated", False):
+                img.seek(0)
+            if img.mode not in ("RGB", "L"):
+                img = img.convert("RGB")
+            w, h = img.size
+            longest = max(w, h)
+            if longest > max_px:
+                scale = max_px / longest
+                img = img.resize((max(1, round(w * scale)), max(1, round(h * scale))), Image.LANCZOS)
+            img.save(jpeg_path, "JPEG", quality=80, optimize=True)
+        return jpeg_path
+    except Exception:  # noqa: BLE001 — fallback на оригинал
+        return path

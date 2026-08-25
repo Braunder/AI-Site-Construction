@@ -23,7 +23,9 @@ def test_save_png_ok():
     assert path.suffix == ".png"
     assert path.exists()
     data_url, b64 = to_base64_data_url(path)
-    assert data_url.startswith("data:image/png;base64,")
+    # Vision-копия всегда JPEG (ресайз + оптимизация токенов); при невозможности
+    # обработки PIL фейковые байты уходят как оригинал с mime по расширению.
+    assert data_url.startswith("data:image/jpeg;base64,") or data_url.startswith("data:image/png;base64,")
     assert b64
 
 

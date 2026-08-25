@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     max_project_size_mb: int = 50     # суммарный размер файлов проекта
     vision_assets: bool = True        # отправлять загруженные изображения модели как vision-контент
     vision_assets_limit: int = 6      # максимум изображений в vision-контенте за один запрос
+    vision_max_px: int = 1024         # длинная сторона vision-копии (токены зависят от разрешения)
 
     @model_validator(mode="after")
     def _warn_on_default_secret(self):
