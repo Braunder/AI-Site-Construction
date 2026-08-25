@@ -96,40 +96,35 @@ async def save_asset(user_id: str, project_id: str, file: UploadFile, rename: bo
     path = pdir / name
     path.write_bytes(data)
 
-    # Растровые изображения конвертируем в JPEG (совместимость, меньше вес)
+    # Растровые изображения конвертируем в WebP (меньше вес, быстрее сайты)
     if ext in {".jpg", ".jpeg", ".png", ".gif", ".webp"}:
-        converted = _convert_to_jpeg(path)
+        converted = _convert_to_webp(path)
         if converted is not None:
             path.unlink(missing_ok=True)  # удаляем оригинал
             path = converted
-            logger.info("Конвертировано в JPEG: %s (%d байт)", path.name, path.stat().st_size)
+            logger.info("Конвертировано в WebP: %s (%d байт)", path.name, path.stat().st_size)
 
     logger.info("Ассет сохранён: %s (%d байт)", path, len(data))
     return path
 
 
-def _convert_to_jpeg(path: Path) -> Path | None:
-    """Конвертирует изображение в JPEG. Возвращает новый путь или None при ошибке."""
+def _convert_to_webp(path: Path) -> Path | None:
+    """Конвертирует изображение в WebP. Возвращает новый путь или None при ошибке."""
     try:
         from PIL import Image
 
         with Image.open(path) as img:
-            # GIF с анимацией не трогаем — JPEG не поддерживает анимацию
+            # GIF с анимацией не трогаем — WebP-анимация сложнее, оставляем как есть
             if path.suffix.lower() == ".gif" and getattr(img, "is_animated", False):
                 return None
-            # JPEG не поддерживает прозрачность — сводим к RGB на белом фоне
-            if img.mode in ("RGBA", "LA", "P"):
-                background = Image.new("RGB", img.size, (255, 255, 255))
-                img = img.convert("RGBA")
-                background.paste(img, mask=img.split()[-1])
-                img = background
-            elif img.mode != "RGB":
+            # RGBA сохраняем с прозрачностью, RGB — без
+            if img.mode not in ("RGB", "RGBA"):
                 img = img.convert("RGB")
-            jpeg_path = path.with_suffix(".jpg")
-            img.save(jpeg_path, "JPEG", quality=88)
-            return jpeg_path
+            webp_path = path.with_suffix(".webp")
+            img.save(webp_path, "WEBP", quality=85, method=6)
+            return webp_path
     except Exception:  # noqa: BLE001 — конвертация не должна ломать загрузку
-        logger.warning("Не удалось конвертировать %s в JPEG", path.name, exc_info=True)
+        logger.warning("Не удалось конвертировать %s в WebP", path.name, exc_info=True)
         return None
 
 
