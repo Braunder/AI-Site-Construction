@@ -1,7 +1,7 @@
 import re
 import unicodedata
 from pathlib import Path
-from urllib.parse import quote
+from urllib.parse import quote, unquote
 
 from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import Response, FileResponse
@@ -413,6 +413,8 @@ def download(
     project = get_project_for_user(project_id, current_user, db)
     if not project.current_html:
         raise HTTPException(409, "Сайт ещё не сгенерирован")
+    if _project_has_assets(project):
+        return _build_zip_response(project)
     filename = f"{_slugify(project.title)}-{project.id[:8]}.html"
     return Response(
         content=project.current_html.encode("utf-8"),
@@ -426,31 +428,33 @@ def download(
     )
 
 
-@router.get("/{project_id}/download-zip")
-def download_zip(
-    project_id: str,
-    current_user: User = Depends(require_user),
-    db: Session = Depends(get_db),
-):
-    """Экспорт проекта в ZIP: index.html + все файлы (для многофайловых проектов)."""
+def _project_has_assets(project: Project) -> bool:
+    if not project.user_id:
+        return False
+    try:
+        pdir = sites_store.project_dir(project.user_id, project.id)
+    except sites_store.SiteFileError:
+        return False
+    return any(f.is_file() and f.name != "index.html" for f in pdir.iterdir())
+
+
+def _build_zip_response(project: Project) -> Response:
     import io
     import zipfile
 
-    project = get_project_for_user(project_id, current_user, db)
-    if not project.current_html:
-        raise HTTPException(409, "Сайт ещё не сгенерирован")
-
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
-        zf.writestr("index.html", project.current_html)
-        if project.is_multifile and project.user_id:
+        html = project.current_html
+        if project.user_id:
             try:
                 pdir = sites_store.project_dir(project.user_id, project.id)
-                for f in sorted(pdir.iterdir()):
-                    if f.is_file() and f.name != "index.html":
-                        zf.write(f, f.name)
+                assets = [f for f in sorted(pdir.iterdir()) if f.is_file() and f.name != "index.html"]
+                html = _make_portable_html(html, project.id, {f.name for f in assets})
+                for asset in assets:
+                    zf.write(asset, asset.name)
             except sites_store.SiteFileError:
                 pass
+        zf.writestr("index.html", html)
 
     zip_name = f"{_slugify(project.title)}-{project.id[:8]}.zip"
     return Response(
@@ -463,6 +467,39 @@ def download_zip(
             )
         },
     )
+
+
+def _make_portable_html(html: str, project_id: str, asset_names: set[str]) -> str:
+    """Заменяет API-ссылки ассетов на имена файлов, работающие из ZIP."""
+    import html as html_module
+
+    pattern = re.compile(
+        r"(?P<quote>[\"'])/api/projects/"
+        + re.escape(project_id)
+        + r"/files/(?P<name>[^?\"'#]+)(?:\?[^\"'#]*)?(?P=quote)"
+    )
+
+    def replace(match: re.Match[str]) -> str:
+        name = unquote(match.group("name"))
+        if name not in asset_names:
+            return match.group(0)
+        return match.group("quote") + html_module.escape(name, quote=True) + match.group("quote")
+
+    return pattern.sub(replace, html)
+
+
+@router.get("/{project_id}/download-zip")
+def download_zip(
+    project_id: str,
+    current_user: User = Depends(require_user),
+    db: Session = Depends(get_db),
+):
+    """Экспорт проекта в ZIP: index.html + все файлы проекта."""
+
+    project = get_project_for_user(project_id, current_user, db)
+    if not project.current_html:
+        raise HTTPException(409, "Сайт ещё не сгенерирован")
+    return _build_zip_response(project)
 
 
 def _slugify(text: str) -> str:

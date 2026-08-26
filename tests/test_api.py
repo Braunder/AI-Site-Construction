@@ -63,6 +63,10 @@ def test_full_cycle(client):
     body = dl.content.decode("utf-8")
     assert "Site v2" in body
 
+    zip_dl = client.get(f"/api/projects/{pid}/download-zip")
+    assert zip_dl.status_code == 200
+    assert zip_dl.headers["content-type"] == "application/zip"
+
     feed = client.get("/projects")
     assert "Сайт для кофейни" in feed.text
 
@@ -128,6 +132,33 @@ def test_svg_asset_served_with_csp_sandbox(client):
     assert resp.status_code == 200
     assert resp.headers.get("content-security-policy") == "sandbox"
     assert resp.headers.get("x-content-type-options") == "nosniff"
+
+
+def test_download_with_assets_returns_zip(client):
+    """Обычная кнопка скачивания экспортирует HTML вместе с ассетами."""
+    import io
+    import zipfile
+
+    project_id = create_project(client, prompt="Сайт с картинкой", multifile="true")
+    upload = client.post(
+        f"/api/projects/{project_id}/assets",
+        files={"file": ("hero.svg", b"<svg></svg>", "image/svg+xml")},
+    )
+    assert upload.status_code == 201, upload.text
+    asset_name = upload.json()["name"]
+    with SessionLocal() as db:
+        project = db.get(Project, project_id)
+        project.current_html = f'<html><body><img src="/api/projects/{project_id}/files/{asset_name}?t=token"></body></html>'
+        db.commit()
+
+    response = client.get(f"/api/projects/{project_id}/download")
+    assert response.status_code == 200
+    assert response.headers["content-type"] == "application/zip"
+    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+        assert "index.html" in archive.namelist()
+        assert asset_name in archive.namelist()
+        assert f'/api/projects/{project_id}/files/' not in archive.read("index.html").decode()
+        assert f'src="{asset_name}"' in archive.read("index.html").decode()
 
 
 def test_delete_missing_asset_returns_404(client):
