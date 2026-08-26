@@ -32,13 +32,15 @@
           {% if user.is_admin %}
             <span class="badge bg-danger">Администратор</span>
           {% endif %}
-          <span class="badge {{ 'bg-success' if plan.key == 'premium' else ('bg-primary' if plan.key == 'standard' else 'bg-secondary') }}">
-            💳 {{ plan.title }}
-          </span>
         </div>
         <div class="col-md-4">
           {% if user.is_admin or user.generation_limit == -1 %}
             <span class="badge bg-success">♾️ Безлимитные генерации</span>
+          {% elif user.generation_limit == 0 %}
+            <p class="mb-1"><strong>Квота:</strong> {{ user.generation_used }} / 0</p>
+            <div class="progress" style="height: 6px;">
+              <div class="progress-bar bg-danger" style="width: 100%"></div>
+            </div>
           {% else %}
             <p class="mb-1"><strong>Квота:</strong> {{ user.generation_used }} / {{ user.generation_limit }}</p>
             <div class="progress" style="height: 6px;">
@@ -151,5 +153,9 @@ document.querySelectorAll('.delete-btn').forEach(btn => {
   });
 });
 </script>
+
+<!-- Developed by Braunder
+GitHub https://github.com/Braunder -->
+
 {% endblock %}
 {% endblock %}

@@ -40,6 +40,19 @@ def test_index_public_when_anonymous():
         assert resp.status_code == 200
 
 
+def test_projects_page_with_zero_quota(client, test_user):
+    """Личный кабинет открывается при нулевом лимите и пустом списке проектов."""
+    with SessionLocal() as db:
+        user = db.get(User, test_user.id)
+        user.generation_limit = 0
+        db.commit()
+
+    response = client.get("/projects")
+    assert response.status_code == 200
+    assert "У вас пока нет проектов" in response.text
+    assert "0 / 0" in response.text
+
+
 def test_full_cycle(client):
     pid = create_project(client)
 

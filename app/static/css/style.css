@@ -107,6 +107,9 @@ a { color: var(--brand-accent); }
   border: 1px solid var(--border);
   color: var(--text);
 }
+.select-dark {
+    color: #524e4e;
+}
 .form-control:focus, .form-select:focus {
   background: var(--bg-elev);
   border-color: var(--brand-primary);

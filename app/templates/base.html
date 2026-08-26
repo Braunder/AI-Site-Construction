@@ -97,8 +97,6 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', path='/js/background.js') }}"></script>
   <script>
-    // Статус LLM: сервер опрашивает провайдеров раз в 5 минут,
-    // клиент лишь читает кэш при загрузке страницы.
     (function () {
       var dot = document.getElementById('llm-status-dot');
       var text = document.getElementById('llm-status-text');
@@ -122,5 +120,8 @@
   </script>
   
   {% block scripts %}{% endblock %}
+
+<!-- Developed by Braunder
+GitHub https://github.com/Braunder -->
 </body>
 </html>
