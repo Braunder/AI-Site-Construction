@@ -46,9 +46,12 @@
                         name="prompt" 
                         rows="4" 
                         required
-                        maxlength="5000"
+                        maxlength="500"
                         placeholder="Например: сайт для кофейни — меню, атмосфера, бронирование столика…"></textarea>
-              <div class="invalid-feedback">Опишите сайт (до 5000 символов).</div>
+              <div class="d-flex justify-content-between align-items-start gap-3 mt-1">
+                <div class="invalid-feedback">Опишите сайт (до 500 символов).</div>
+                <div id="prompt-counter" class="form-text text-nowrap ms-auto" aria-live="polite">0 / 500</div>
+              </div>
               <div class="form-text">
                 Примеры:
                 <a href="#" class="example-chip">пекарня</a>,
@@ -86,7 +89,7 @@
                        class="form-control form-control-color w-100" 
                        id="color_primary"
                        name="color_primary" 
-                       value="#1f2937">
+                       value="#ffffff">
               </div>
               <div class="col-md-4">
                 <label for="color_accent" class="form-label fw-bold">Акцентный цвет</label>
@@ -94,7 +97,7 @@
                        class="form-control form-control-color w-100" 
                        id="color_accent"
                        name="color_accent" 
-                       value="#3b82f6">
+                       value="#ffffff">
               </div>
               <div class="col-md-4">
                 <label for="color_bg" class="form-label fw-bold">Фоновый цвет</label>
@@ -191,6 +194,6 @@
 </div>
 
 {% block scripts %}
-<script src="{{ url_for('static', path='/js/main.js') }}"></script>
+<script src="{{ url_for('static', path='/js/main.js') }}?v=2"></script>
 {% endblock %}
 {% endblock %}

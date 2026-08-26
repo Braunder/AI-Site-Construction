@@ -4,6 +4,7 @@
 
   var form = document.getElementById('gen-form');
   var promptEl = document.getElementById('prompt');
+  var promptCounter = document.getElementById('prompt-counter');
   var dropZone = document.getElementById('drop-zone');
   var fileInput = document.getElementById('image');
   var fileName = document.getElementById('file-name');
@@ -11,12 +12,23 @@
   var overlay = document.getElementById('loading-overlay');
   var loadingText = document.getElementById('loading-text');
   var MAX_BYTES = 5 * 1024 * 1024;
+  var PROMPT_MAX_LENGTH = 500;
+
+  function updatePromptCounter() {
+    if (!promptEl || !promptCounter) return;
+    promptCounter.textContent = promptEl.value.length + ' / ' + PROMPT_MAX_LENGTH;
+    promptCounter.classList.toggle('text-danger', promptEl.value.length >= PROMPT_MAX_LENGTH);
+  }
+
+  if (promptEl) promptEl.addEventListener('input', updatePromptCounter);
+  updatePromptCounter();
 
   // --- Пресеты и примеры ---
   document.querySelectorAll('.preset-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       promptEl.value = btn.dataset.prompt;
       promptEl.classList.remove('is-invalid');
+      updatePromptCounter();
     });
   });
   var EXAMPLES = {
@@ -30,24 +42,27 @@
       e.preventDefault();
       promptEl.value = EXAMPLES[chip.textContent.trim()] || '';
       promptEl.classList.remove('is-invalid');
+      updatePromptCounter();
     });
   });
 
   // --- Drag-and-drop ---
-  dropZone.addEventListener('click', function () { fileInput.click(); });
-  ['dragenter', 'dragover'].forEach(function (ev) {
-    dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.add('dragover'); });
-  });
-  ['dragleave', 'drop'].forEach(function (ev) {
-    dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.remove('dragover'); });
-  });
-  dropZone.addEventListener('drop', function (e) {
-    if (e.dataTransfer.files.length) {
-      fileInput.files = e.dataTransfer.files;
-      showFile();
-    }
-  });
-  fileInput.addEventListener('change', showFile);
+  if (dropZone && fileInput) {
+    dropZone.addEventListener('click', function () { fileInput.click(); });
+    ['dragenter', 'dragover'].forEach(function (ev) {
+      dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.add('dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (ev) {
+      dropZone.addEventListener(ev, function (e) { e.preventDefault(); dropZone.classList.remove('dragover'); });
+    });
+    dropZone.addEventListener('drop', function (e) {
+      if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
+        showFile();
+      }
+    });
+    fileInput.addEventListener('change', showFile);
+  }
 
   function showFile() {
     var f = fileInput.files[0];
@@ -63,7 +78,7 @@
   // --- Валидация ---
   function validate() {
     var ok = true;
-    if (!promptEl.value.trim() || promptEl.value.length > 5000) {
+    if (!promptEl.value.trim() || promptEl.value.length > PROMPT_MAX_LENGTH) {
       promptEl.classList.add('is-invalid'); ok = false;
     } else {
       promptEl.classList.remove('is-invalid');

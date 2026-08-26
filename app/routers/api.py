@@ -24,7 +24,7 @@ HEX_COLOR_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
 # Только обычный пробел — не \n, \r, \t (иначе возможен prompt injection через font)
 FONT_RE = re.compile(r"^[\w()\+\- ]{1,100}$", re.UNICODE)
 ALLOWED_STYLES = {"minimalism", "brutalism", "corporate", "creative", "dark", "elegant"}
-PROMPT_MAX_LEN = 5000
+PROMPT_MAX_LEN = 500
 INSTRUCTION_MAX_LEN = 2000
 
 

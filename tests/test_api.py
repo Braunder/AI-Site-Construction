@@ -74,6 +74,7 @@ def test_validation_errors(client):
     assert client.post("/api/projects", data={**VALID_FORM, "prompt": ""}).status_code == 422
     assert client.post("/api/projects", data={**VALID_FORM, "style": "gothic"}).status_code == 422
     assert client.post("/api/projects", data={**VALID_FORM, "color_primary": "red"}).status_code == 422
+    assert client.post("/api/projects", data={**VALID_FORM, "prompt": "а" * 1001}).status_code == 422
     long_prompt = "а" * 5001
     assert client.post("/api/projects", data={**VALID_FORM, "prompt": long_prompt}).status_code == 422
 
