@@ -13,9 +13,8 @@
       {% if project.status == 'done' %}✅ готов{% elif project.status == 'error' %}❌ ошибка{% else %}⏳ в работе{% endif %}
     </span>
     
-    <!-- Actions -->
+    <!-- User Info -->
     <div class="ms-auto d-flex gap-2 align-items-center">
-      <!-- User Info Badge -->
       {% if user %}
         <span class="text-muted small me-3">👤 {{ user.username }}</span>
         {% if user.is_admin %}
@@ -24,14 +23,6 @@
       {% else %}
         <a href="/login" class="btn btn-outline-primary btn-sm">Войти</a>
       {% endif %}
-      
-      <!-- Action Buttons -->
-      <a class="btn btn-outline-secondary btn-sm" href="/api/projects/{{ project.id }}/download">⬇️ Скачать .html</a>
-      {% if project.is_multifile %}
-      <a class="btn btn-outline-secondary btn-sm" href="/api/projects/{{ project.id }}/download-zip">🗜️ Скачать .zip</a>
-      {% endif %}
-      <button class="btn btn-outline-warning btn-sm" id="regen-btn">🔄 Перегенерировать</button>
-      <button class="btn btn-outline-danger btn-sm" id="delete-btn">🗑️ Удалить</button>
     </div>
   </div>
 
@@ -45,75 +36,88 @@
     <!-- Preview Section -->
     <div class="col-lg-8">
       <div class="card shadow-sm border-0 mb-3">
-        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
           <h5 class="mb-0">👁️ Предпросмотр сайта</h5>
-          <span class="text-muted small" id="preview-status">Загрузка...</span>
         </div>
-        <div class="card-body p-0">
-          <div class="preview-wrap">
+        <div class="card-body p-2 bg-white">
+          <!-- Device Switcher -->
+          <div class="d-flex justify-content-center mb-2">
+            <div class="btn-group btn-group-sm" role="group" aria-label="Устройства">
+              <button type="button" class="btn btn-outline-secondary active" data-device="desktop" data-width="100%">
+                🖥️ Desktop
+              </button>
+              <button type="button" class="btn btn-outline-secondary" data-device="tablet" data-width="768px">
+                📱 Tablet
+              </button>
+              <button type="button" class="btn btn-outline-secondary" data-device="mobile" data-width="375px">
+                📱 Mobile
+              </button>
+            </div>
+          </div>
+          <!-- Iframe Wrapper -->
+          <div id="preview-frame-wrap" style="width: 100%; margin: 0 auto; transition: width 0.3s ease; border: 1px solid #dee2e6; border-radius: 0.375rem; overflow: hidden;">
             <iframe id="preview" 
                     src="/projects/{{ project.id }}/preview"
                     sandbox="allow-scripts" 
                     title="Предпросмотр сайта"
-                    style="width: 100%; height: 600px; border: none;"></iframe>
+                    style="width: 100%; height: 600px; border: none; display: block;"></iframe>
           </div>
-        </div>
-      </div>
-
-      <!-- Project Details Card -->
-      <div class="card shadow-sm border-0">
-        <div class="card-header bg-light">
-          <h5 class="mb-0">📋 Информация о проекте</h5>
-        </div>
-        <div class="card-body small">
-          <p><strong>Создан:</strong> {{ project.created_at.strftime('%d.%m.%Y %H:%M') }}</p>
-          <p><strong>ID проекта:</strong> {{ project.id[:12] }}...</p>
-          {% if project.prompt %}
-          <p class="mt-3"><strong>Промпт:</strong></p>
-          <blockquote class="border rounded p-3 bg-light">
-            {{ project.prompt[:200] }}{% if project.prompt|length > 200 %}...{% endif %}
-          </blockquote>
-          {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Chat Editor Section -->
-    <div class="col-lg-4">
-      <div class="card chat-card shadow-sm border-0 h-100 d-flex flex-column">
-        <div class="card-header bg-primary text-white">
-          <h5 class="mb-0">💬 Редактирование через чат</h5>
+    <!-- Right Column: Chat + Actions -->
+    <div class="col-lg-4 d-flex flex-column gap-2">
+      <!-- Chat Editor Section -->
+      <div class="card chat-card shadow-sm border-0 d-flex flex-column" style="max-height: 340px;">
+        <div class="card-header bg-primary text-white py-1">
+          <h6 class="mb-0" style="font-size: 0.85rem;">💬 Редактирование</h6>
         </div>
-        <div class="card-body chat-body flex-grow-1 mb-0" id="chat-body">
+        <div class="card-body chat-body flex-grow-1 mb-0 p-1" id="chat-body" style="min-height: 0; overflow-y: auto;">
           {% for h in project.history %}
-          <div class="chat-entry mb-2 p-2 bg-light rounded mb-0">
-            <span class="badge text-bg-{{ 'primary' if h.kind == 'edit' else ('secondary' if h.kind == 'regenerate' else 'info') }} me-1">
+          <div class="chat-entry mb-1 p-1 bg-light rounded">
+            <span class="badge text-bg-{{ 'primary' if h.kind == 'edit' else ('secondary' if h.kind == 'regenerate' else 'info') }} me-1" style="font-size: 0.6rem; padding: 0.15em 0.4em;">
               {{ '✏️ правка' if h.kind == 'edit' else ('🔄 перегенерация' if h.kind == 'regenerate' else '✨ генерация') }}
             </span>
-            <div class="small">{{ h.instruction }}</div>
-            <div class="text-muted" style="font-size:0.7rem">{{ h.created_at.strftime('%d.%m %H:%M') }}</div>
+            <div style="font-size: 0.75rem; line-height: 1.2;">{{ h.instruction }}</div>
+            <div class="text-muted" style="font-size:0.6rem">{{ h.created_at.strftime('%d.%m %H:%M') }}</div>
           </div>
           {% else %}
-          <p class="text-muted small text-center py-3">
+          <p class="text-muted text-center py-2 mb-0" style="font-size: 0.7rem;">
             История пуста — сайт ещё генерируется или это новый проект.
           </p>
           {% endfor %}
           
           <!-- Thinking Indicator -->
-          <div id="chat-thinking" class="text-muted small d-none p-2 bg-light rounded">
-            <span class="spinner-border spinner-border-sm"></span> LLM обновляет сайт…
+          <div id="chat-thinking" class="text-muted d-none p-1 bg-light rounded" style="font-size: 0.7rem;">
+            <span class="spinner-border spinner-border-sm" style="width: 0.7rem; height: 0.7rem;"></span> LLM обновляет сайт…
           </div>
         </div>
-        <div class="card-footer chat-footer bg-light mb-0">
-          <form id="chat-form" class="d-flex gap-2">
+        <div class="card-footer chat-footer bg-light mb-0 p-1">
+          <form id="chat-form" class="d-flex gap-1">
             <input type="text" 
-                   class="form-control flex-grow-1" 
+                   class="form-control form-control-sm" 
                    id="chat-input" 
                    maxlength="2000"
-                   placeholder="Например: сделай шапку тёмнее, добавь контакты..." 
+                   placeholder="Например: сделай шапку тёмнее..." 
                    autocomplete="off">
-            <button class="btn btn-primary" id="chat-send" type="submit">→</button>
+            <button class="btn btn-primary btn-sm" id="chat-send" type="submit">→</button>
           </form>
+        </div>
+      </div>
+
+      <!-- Action Buttons under Chat -->
+      <div class="card shadow-sm border-0">
+        <div class="card-body p-2">
+          <div class="d-grid gap-2">
+            <a class="btn btn-outline-primary btn-sm" href="/projects/{{ project.id }}/preview" target="_blank">🌐 Открыть сайт</a>
+            <a class="btn btn-outline-secondary btn-sm" href="/api/projects/{{ project.id }}/download">⬇️ Скачать .html</a>
+            {% if project.is_multifile %}
+            <a class="btn btn-outline-secondary btn-sm" href="/api/projects/{{ project.id }}/download-zip">🗜️ Скачать .zip</a>
+            {% endif %}
+            <button class="btn btn-outline-warning btn-sm" id="regen-btn">🔄 Перегенерировать</button>
+            <button class="btn btn-outline-danger btn-sm" id="delete-btn">🗑️ Удалить</button>
+          </div>
         </div>
       </div>
     </div>
@@ -121,8 +125,8 @@
 
   <!-- Files Manager (multifile projects) -->
   {% if project.is_multifile %}
-  <div class="card shadow-sm border-0 mb-3">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <div class="card shadow-sm border-0 mb-3 mt-3">
+    <div class="card-header bg-light d-flex justify-content-between align-items-center py-2">
       <span class="fw-bold">📂 Файлы проекта</span>
       <span class="text-muted small">Изображения, шрифты, CSS/JS — доступны сайту по имени файла</span>
     </div>
@@ -130,12 +134,12 @@
       <!-- Upload -->
       <form id="asset-upload-form" class="row g-2 align-items-end mb-3">
         <div class="col-md-9">
-          <input type="file" class="form-control" id="asset-file"
+          <input type="file" class="form-control form-control-sm" id="asset-file"
                  accept=".jpg,.jpeg,.png,.gif,.webp,.svg,.ico,.css,.js,.woff2,.woff,.ttf,.json,.csv" required>
           <div class="invalid-feedback" id="asset-error"></div>
         </div>
         <div class="col-md-3">
-          <button type="submit" class="btn btn-primary w-100" id="asset-upload-btn">⬆️ Загрузить файл</button>
+          <button type="submit" class="btn btn-primary btn-sm w-100" id="asset-upload-btn">⬆️ Загрузить</button>
         </div>
       </form>
       <!-- List -->
@@ -154,7 +158,7 @@
 
   <!-- Back to Projects -->
   <div class="mt-4 mb-4 text-center">
-    <a href="/projects" class="btn btn-outline-secondary">← Вернуться к проектам</a>
+    <a href="/projects" class="btn btn-outline-secondary btn-sm">← Вернуться к проектам</a>
   </div>
 </div>
 {% endblock %}
@@ -163,6 +167,21 @@
 <script>
 window.PROJECT_ID = "{{ project.id }}";
 window.PROJECT_STATUS = "{{ project.status }}";
+
+// Device preview switcher
+document.addEventListener('DOMContentLoaded', function() {
+  const buttons = document.querySelectorAll('[data-device]');
+  const frameWrap = document.getElementById('preview-frame-wrap');
+  if (buttons.length && frameWrap) {
+    buttons.forEach(btn => {
+      btn.addEventListener('click', function() {
+        buttons.forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        frameWrap.style.width = this.dataset.width;
+      });
+    });
+  }
+});
 </script>
 <script src="{{ url_for('static', path='/js/detail.js') }}"></script>
 {% if project.is_multifile %}
