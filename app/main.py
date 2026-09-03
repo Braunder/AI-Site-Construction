@@ -7,7 +7,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqladmin import Admin
+from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.admin import AdminAuth, HistoryAdmin, LLMProviderAdmin, ProjectAdmin, UserAdmin
 from app.config import BASE_DIR, get_settings
@@ -83,6 +85,12 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="AI Site Construction", version="0.1.0", lifespan=lifespan)
 
 # --- Middleware ---
+if settings.proxy_headers:
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+app.add_middleware(
+    TrustedHostMiddleware,
+    allowed_hosts=settings.allowed_hosts_list,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origin_list,

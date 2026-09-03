@@ -20,12 +20,14 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 16000
 
     # Приложение
+    app_env: str = "development"
     database_url: str = f"sqlite:///{BASE_DIR / 'data' / 'app.db'}"
     upload_dir: str = str(BASE_DIR / "uploads")
     secret_key: str = "change-me-in-production"
     session_cookie_secure: bool = False  # в production включить True + HTTPS
     session_cookie_httponly: bool = True
     cors_origins: str = "http://127.0.0.1:8000,http://localhost:8000"
+    allowed_hosts: str = "*"
     # Railway/прокси: доверять X-Forwarded-Proto/Host (для корректных redirect и secure-cookie)
     proxy_headers: bool = False
     forwarded_allow_ips: str = "*"
@@ -99,6 +101,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    @property
+    def allowed_hosts_list(self) -> list[str]:
+        return [o.strip() for o in self.allowed_hosts.split(",") if o.strip()] or ["*"]
 
     @property
     def max_upload_bytes(self) -> int:

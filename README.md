@@ -109,6 +109,27 @@ RUN_LOCAL_E2E=1 pytest tests/test_e2e_local.py   # E2E против локаль
 Минимум для production: сменить `SECRET_KEY`, указать боевые `LLM_*`,
 запускать uvicorn за reverse-proxy (nginx) с HTTPS.
 
+### Production-ready Docker / Compose
+
+В корне проекта добавлены конфиги для контейнерного деплоя:
+
+- `Dockerfile` — сборка приложения в контейнере
+- `docker-compose.yml` — запуск приложения + PostgreSQL
+- `deploy/nginx/default.conf` — reverse proxy для nginx
+- `.env.example` — шаблон production-переменных
+
+Сценарий запуска:
+
+```bash
+cp .env.example .env
+# отредактировать .env под боевые значения
+
+docker compose up -d --build
+```
+
+После старта приложение будет доступно на `http://localhost:8000` через контейнерный app.
+Для production на VPS выше можно добавить отдельный nginx контейнер или поставить один nginx на хост-машине и проксировать на порт 8000.
+
 ### Деплой на Railway
 
 Проект готов к Railway из коробки: `Procfile`, `railway.json`, `runtime.txt`.
