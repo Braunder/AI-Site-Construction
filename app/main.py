@@ -7,7 +7,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 from sqladmin import Admin
-from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+try:
+    from starlette.middleware.proxy_headers import ProxyHeadersMiddleware
+except Exception:
+    try:
+        from starlette.middleware.proxyheaders import ProxyHeadersMiddleware
+    except Exception:
+        ProxyHeadersMiddleware = None
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
@@ -86,7 +92,10 @@ app = FastAPI(title="AI Site Construction", version="0.1.0", lifespan=lifespan)
 
 # --- Middleware ---
 if settings.proxy_headers:
-    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+    if ProxyHeadersMiddleware is not None:
+        app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
+    else:
+        logger.warning("ProxyHeadersMiddleware not available in installed Starlette; skipping proxy headers middleware")
 app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=settings.allowed_hosts_list,
